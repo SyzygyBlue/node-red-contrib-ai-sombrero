@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  node-red:
+    build: .
+    container_name: node-red-ai
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./:/usr/src/app
+      - node_red_data:/data
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - postgres
+  
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-workflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user                    # Standard project user
+      POSTGRES_PASSWORD: password           # Standard user password
+      POSTGRES_DB: ai_workflow_db           # Default database
+      POSTGRES_INITDB_ARGS: "--username=root --pwfile=/run/secrets/pg_root_pw"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    secrets:
+      - pg_root_pw
+
+volumes:
+  node_red_data:
+  pgdata:
+
+secrets:
+  pg_root_pw:
+    file: ./pg_root_password.txt

@@ -1,0 +1,25 @@
+{
+  "env": {
+    "node": true,
+    "es2021": true,
+    "jest": true
+  },
+  "extends": [
+    "standard",
+    "plugin:prettier/recommended"
+  ],
+  "globals": {
+    "RED": "readonly"
+  },
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-console": "warn",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "prettier/prettier": ["error", {}, { "usePrettierrc": true }]
+  },
+  "plugins": ["prettier"],
+  "ignorePatterns": ["node_modules/", "coverage/", "dist/"]
+}
