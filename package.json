@@ -1,5 +1,5 @@
 {
-  "name": "node-red-ai-workflow",
+  "name": "node-red-contrib-ai-sombrero",
   "version": "0.1.0",
   "description": "AI Workflow Orchestration for Node-RED",
   "main": "index.js",
@@ -45,7 +45,10 @@
     "testEnvironment": "node",
     "coverageDirectory": "coverage",
     "collectCoverageFrom": [
-      "src/**/*.js",
+      "nodes/**/*.js",
+      "services/**/*.js",
+      "helpers/**/*.js",
+      "utils/**/*.js",
       "!**/node_modules/**"
     ],
     "coverageThreshold": {
