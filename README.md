@@ -1,10 +1,12 @@
 # Node-RED AI Sombrero
 
+[![CI](https://github.com/SyzygyBlue/node-red-contrib-ai-sombrero/actions/workflows/ci.yml/badge.svg)](https://github.com/SyzygyBlue/node-red-contrib-ai-sombrero/actions/workflows/ci.yml) [![Keep a Changelog](https://img.shields.io/badge/Changelog-Keep%20a%20Changelog-%23E05735)](CHANGELOG.md)
+
 AI Sombrero is a plug-and-play orchestration toolkit for Node-RED that enables intelligent automation chains—put a hat on it and let the Sombrero drive.
 
 A powerful, modular AI workflow orchestration system built on Node-RED with support for multiple LLM providers, database backends, and queue management.
 
-## Project Structure
+## 📦 Project Structure
 
 ```
 .
@@ -18,7 +20,11 @@ A powerful, modular AI workflow orchestration system built on Node-RED with supp
 └── .gitignore             # Git ignore file
 ```
 
-## Getting Started
+## 📜 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed record of all notable changes to this project.
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
