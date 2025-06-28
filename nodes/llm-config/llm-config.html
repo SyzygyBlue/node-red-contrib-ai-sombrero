@@ -1,0 +1,132 @@
+<script type="text/javascript">
+  'use strict';
+
+  // Load provider configurations
+  $.getJSON('llm-providers')
+    .done(function(providers) {
+      RED.settings.set('llmProviders', providers);
+    })
+    .fail(function() {
+      console.error('Failed to load LLM providers');
+    });
+
+  // Main node definition
+  RED.nodes.registerType('llm-config', {
+    category: 'config',
+    defaults: {
+      name: { value: '' },
+      provider: { value: '', required: true },
+      // Dynamic fields will be added based on provider
+    },
+    credentials: {
+      // Will be populated dynamically based on provider
+    },
+    label: function() {
+      return this.name || 'LLM Config';
+    },
+    oneditprepare: function() {
+      const node = this;
+      const providerSelect = $('#node-config-input-provider');
+      const configContainer = $('#node-config-credentials');
+      const providers = RED.settings.get('llmProviders') || [];
+
+      // Populate provider dropdown
+      providers.forEach(provider => {
+        providerSelect.append($('<option>', {
+          value: provider.id,
+          text: provider.name
+        }));
+      });
+
+      // Handle provider change
+      function updateConfigUI(providerId) {
+        const provider = providers.find(p => p.id === providerId);
+        if (!provider) return;
+
+        // Clear existing fields
+        configContainer.empty();
+
+        // Add provider-specific fields
+        if (provider.fields) {
+          provider.fields.forEach(field => {
+            const fieldId = `node-config-${field.name}`;
+            const row = $('<div>', { class: 'form-row' });
+            
+            row.append($('<label>', {
+              for: fieldId,
+              text: field.label
+            }));
+
+            if (field.type === 'password') {
+              const input = $('<input>', {
+                type: 'password',
+                id: fieldId,
+                style: 'width: 70%',
+                'data-credential': field.credential || false
+              });
+              row.append(input);
+            } else {
+              const input = $('<input>', {
+                type: 'text',
+                id: fieldId,
+                style: 'width: 70%'
+              });
+              row.append(input);
+            }
+
+            configContainer.append(row);
+          });
+        }
+
+        // Add test connection button
+        const testBtn = $('<button>', {
+          class: 'editor-button',
+          style: 'margin-top: 10px;',
+          text: 'Test Connection'
+        }).click(function() {
+          // Implement test connection logic
+          alert('Test connection would be implemented here');
+        });
+        
+        configContainer.append(testBtn);
+      }
+
+      // Initial UI update
+      providerSelect.on('change', function() {
+        updateConfigUI($(this).val());
+      });
+
+      if (node.provider) {
+        providerSelect.val(node.provider);
+        updateConfigUI(node.provider);
+      }
+    },
+    oneditsave: function() {
+      // Handle save logic
+      return true;
+    }
+  });
+</script>
+
+<!-- Node configuration panel -->
+<script type="text/x-red" data-template-name="llm-config">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-provider"><i class="fa fa-plug"></i> Provider</label>
+    <select id="node-config-input-provider" style="width: 70%;">
+      <option value="">-- Select Provider --</option>
+    </select>
+  </div>
+  <div id="node-config-credentials">
+    <!-- Dynamic fields will be inserted here -->
+  </div>
+</script>
+
+<!-- Node help text -->
+<script type="text/x-red" data-help-name="llm-config">
+  <p>Configure LLM provider settings and credentials.</p>
+  <p>Select a provider and fill in the required connection details.</p>
+</script>

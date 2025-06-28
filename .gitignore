@@ -1,5 +1,6 @@
 # Node.js
 node_modules/
+package-lock.json
 .env
 .env.local
 
@@ -8,6 +9,13 @@ node_modules/
 
 # Testing
 coverage/
+/test-results.json
+
+# Project specific
+/config/*.json
+/examples/*.json
+/services/*.js
+!services/audit-service.js
 
 # IDE
 .vscode/

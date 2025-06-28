@@ -1,0 +1,218 @@
+Here's your rewritten, clearly structured, detailed plan emphasizing small, modular helper files and clearly defined main node files as managers. This setup establishes strong architectural rails early, minimizing complexity and duplication later on.
+
+Node-RED AI Workflow Orchestrator: Project Structure and Architectural Guidelines
+Recommended Project Directory Structure
+php
+Copy
+Edit
+node-red-ai-workflow-orchestrator/
+├── nodes/                               # Node managers only (minimal logic)
+│   ├── llm-config/
+│   │   ├── llm-config.js                # Manager file only (~200 lines)
+│   │   └── llm-config.html
+│   ├── llm-connector/
+│   │   ├── llm-connector.js             # Manager file only (~200 lines)
+│   │   └── llm-connector.html
+│   ├── database-connector/
+│   │   ├── database-connector.js        # Manager file only (~200 lines)
+│   │   └── database-connector.html
+│   ├── mcp-node/
+│   │   ├── mcp-node.js                  # Manager file only (~200 lines)
+│   │   └── mcp-node.html
+│   └── queueing-node/
+│       ├── queueing-node.js             # Manager file only (~200 lines)
+│       └── queueing-node.html
+│
+├── services/                            # Shared cross-node logic
+│   ├── ai-service.js                    # AI provider interactions
+│   ├── database-service.js              # DB connection management
+│   ├── audit-service.js                 # Unified audit/logging logic
+│   └── queue-service.js                 # Queue management logic
+│
+├── helpers/                             # Node-specific logic modules (clearly separated)
+│   ├── llm-config-helpers.js
+│   ├── llm-connector-helpers.js
+│   ├── database-connector-helpers.js
+│   ├── mcp-node-helpers.js
+│   └── queueing-node-helpers.js
+│
+├── utils/                               # Reusable utility functions
+│   ├── payload-utils.js
+│   └── validation-utils.js
+│
+├── tests/                               # Jest unit/integration tests
+│   ├── nodes/
+│   │   ├── llm-config.test.js
+│   │   ├── llm-connector.test.js
+│   │   ├── database-connector.test.js
+│   │   ├── mcp-node.test.js
+│   │   └── queueing-node.test.js
+│   ├── services/
+│   │   ├── ai-service.test.js
+│   │   ├── database-service.test.js
+│   │   ├── audit-service.test.js
+│   │   └── queue-service.test.js
+│   └── helpers/
+│       ├── llm-config-helpers.test.js
+│       └── mcp-node-helpers.test.js (and others as needed)
+│
+├── docs/                                # Documentation (Architecture, Setup, Usage)
+│   ├── architecture.md
+│   ├── installation.md
+│   └── usage.md
+│
+├── package.json
+├── jest.config.js
+└── README.md
+Architectural Rails & Guidelines to Avoid Large, Unmanageable Files
+Clearly Defined Node Manager Files
+Each main Node file (e.g., llm-config.js) must act as a minimal manager:
+
+Registers the node with Node-RED (RED.nodes.registerType(...))
+
+Handles Node-RED specific interactions (this.on('input', ...), message passing)
+
+Delegates all substantive logic to well-defined helper methods.
+
+Keep under ~200 lines to remain highly readable and maintainable.
+
+Example llm-config.js manager pattern:
+
+js
+Copy
+Edit
+const { handleCredentials, testConnection } = require('../../helpers/llm-config-helpers');
+
+module.exports = function(RED) {
+  function LLMConfigNode(config) {
+    RED.nodes.createNode(this, config);
+    
+    // Node initialization
+    handleCredentials(this, config);
+
+    // Test connectivity from UI
+    this.on('input', async (msg, send, done) => {
+      try {
+        const result = await testConnection(msg);
+        send({ payload: result });
+      } catch (err) {
+        done(err);
+      }
+    });
+  }
+
+  RED.nodes.registerType("llm-config", LLMConfigNode);
+};
+Small, Modular Helper Functions
+Helpers must reside clearly in separate, dedicated files under /helpers.
+
+Limit each helper function/file to clear, single responsibilities.
+
+Helper files ideally ~200–400 lines max, individual functions ideally <150 lines.
+
+Example: helpers/llm-config-helpers.js
+
+js
+Copy
+Edit
+const { encryptCredentials, decryptCredentials } = require('../utils/payload-utils');
+const aiService = require('../services/ai-service');
+
+async function handleCredentials(node, config) {
+  node.credentials = encryptCredentials(config.apiKeys);
+}
+
+async function testConnection(msg) {
+  const credentials = decryptCredentials(msg.credentials);
+  return aiService.pingProvider(credentials);
+}
+
+module.exports = {
+  handleCredentials,
+  testConnection,
+};
+Shared Services for Cross-Node Logic (No Duplicates)
+Reusable logic is exclusively stored in /services.
+
+Before writing new logic, search existing service methods carefully.
+
+Enforce via clearly structured method documentation (a simple method registry).
+
+Method registry example inside each service file (services/ai-service.js):
+
+js
+Copy
+Edit
+/**
+ * Method: pingProvider
+ * Description: Tests LLM provider connectivity.
+ * Inputs: credentials (Object)
+ * Returns: Promise resolving to boolean.
+ */
+async function pingProvider(credentials) {
+  // implementation...
+}
+Utility Functions (Reusable across Helpers/Services)
+Small, general-purpose functions clearly stored in /utils.
+
+Enforce clear single-responsibility principle to reduce complexity.
+
+Jest-Based Testing Strategy
+Use Jest for thorough unit/integration tests.
+
+Clearly separate tests mirroring file structure.
+
+Aim for high coverage (~90%+); mock external API/database interactions.
+
+Example test structure:
+
+arduino
+Copy
+Edit
+tests/
+├── nodes/
+│   ├── llm-config.test.js
+│   ├── mcp-node.test.js
+│   └── ...other nodes
+├── services/
+│   ├── ai-service.test.js
+│   └── ...other services
+└── helpers/
+    ├── llm-config-helpers.test.js
+    └── ...other helper files
+Architectural Rules Summary (Quick Reference)
+✅ Node manager files: Minimal logic (~200 lines), delegate to helpers/services.
+
+✅ Helper files: ~200–400 lines, single responsibility clearly defined.
+
+✅ No node-to-node imports: Prevent circular dependencies.
+
+✅ Method Registry: Document methods clearly to avoid duplication.
+
+✅ Testing via Jest: Mandatory unit tests, aim for ≥90% coverage.
+
+Recommended Memories (Windsurf)
+Consider asking Windsurf to retain these guidelines as explicit memories:
+
+"Main Node files are managers only; logic must delegate to helper/service files."
+
+"Always search helper and service files before creating new methods to prevent duplicates."
+
+"Node-to-node imports are prohibited; use services/helpers only."
+
+"All JS files should ideally remain under 600 lines, helper methods <150 lines."
+
+Completion Criteria (Final Checklist)
+ Project structure matches above exactly.
+
+ All nodes strictly follow manager-helper delegation pattern.
+
+ No duplicated logic exists across nodes/helpers.
+
+ Jest test coverage ≥90% for all code.
+
+ Clear method documentation for all helpers and services.
+
+ Circular dependencies and large files (>600 lines) strictly prohibited.
+
+By clearly establishing these architectural rails upfront, we proactively prevent common pitfalls and ensure the project's maintainability, readability, and efficiency long-term.

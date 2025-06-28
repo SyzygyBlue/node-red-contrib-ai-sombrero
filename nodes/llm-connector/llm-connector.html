@@ -1,0 +1,169 @@
+<script type="text/html" data-template-name="llm-connector">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name">
+  </div>
+  
+  <div class="form-row">
+    <label for="node-config-input-llmConfig"><i class="fa fa-cog"></i> LLM Config</label>
+    <input type="text" id="node-config-input-llmConfig">
+  </div>
+  
+  <div class="form-row">
+    <label for="node-config-input-role"><i class="fa fa-user"></i> Role</label>
+    <select id="node-config-input-role" style="width: 70%;">
+      <option value="assistant">Assistant (default)</option>
+    </select>
+  </div>
+  
+  <div class="form-row">
+    <label for="node-config-input-debug">
+      <input type="checkbox" id="node-config-input-debug" style="display: inline-block; width: auto; vertical-align: top;">
+      <span>Enable debug mode</span>
+    </label>
+  </div>
+  
+  <div class="form-row debug-options" style="display: none;">
+    <label for="node-options-group"><i class="fa fa-cog"></i> Advanced Options (JSON)</label>
+    <div id="node-options-group" style="height: 150px;"></div>
+    <input type="hidden" id="node-input-options">
+  </div>
+  
+  <div class="form-tips">
+    <p>This node processes messages using the specified LLM provider and role template.</p>
+    <p>Outputs to the first output on success, or the second output on error.</p>
+  </div>
+</script>
+
+<script type="text/javascript">
+  'use strict';
+  
+  RED.nodes.registerType('llm-connector', {
+    category: 'AI/LLM',
+    color: '#a6bbcf',
+    defaults: {
+      name: { value: '' },
+      llmConfig: { type: 'llm-config', required: true },
+      debug: { value: false },
+      role: { value: 'assistant' },
+      options: { value: '{}', validate: RED.validators.json() }
+    },
+    inputs: 1,
+    outputs: 2,
+    icon: 'font-awesome/fa-cogs',
+    label: function () {
+      return this.name || 'LLM Connector';
+    },
+    oneditprepare: function() {
+      const node = this;
+      
+      // Initialize the config node selector
+      $('#node-config-input-llmConfig').typedInput({
+        types: [
+          {
+            value: 'llm-config',
+            label: 'LLM Config',
+            type: 'node:llm-config'
+          }
+        ]
+      });
+      
+      // Load available roles
+      $.getJSON('llm-connector/roles')
+        .done(function(roles) {
+          const roleSelect = $('#node-config-input-role');
+          roleSelect.empty();
+          
+          if (roles.length === 0) {
+            roleSelect.append($('<option>', {
+              value: 'assistant',
+              text: 'Assistant (default)'
+            }));
+          } else {
+            roles.forEach(function(role) {
+              roleSelect.append($('<option>', {
+                value: role.id,
+                text: `${role.label} - ${role.description.substring(0, 50)}${role.description.length > 50 ? '...' : ''}`
+              }));
+            });
+          }
+          
+          // Set the selected role
+          if (node.role) {
+            roleSelect.val(node.role);
+          }
+        })
+        .fail(function(error) {
+          console.error('Failed to load LLM roles:', error);
+          // Fallback to default role
+          const roleSelect = $('#node-config-input-role');
+          roleSelect.empty().append($('<option>', {
+            value: 'assistant',
+            text: 'Assistant (default)'
+          }));
+        });
+      
+      // Initialize JSON editor for options
+      const optionsEditor = $('<div>', { 
+        style: 'width: 100%; height: 150px;'
+      }).appendTo('#node-options-group');
+      
+      const optionsEditorInstance = RED.editor.createEditor({
+        value: node.options || '{}',
+        mode: 'json',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        lineWrapping: true
+      });
+      
+      // Toggle debug options
+      $('#node-config-input-debug').on('change', function() {
+        $('.debug-options').toggle(this.checked);
+      }).trigger('change');
+      
+      // Save options when the dialog is saved
+      $('#node-config-dialog-ok').on('click', function() {
+        try {
+          const options = optionsEditorInstance.editor.getValue();
+          $('#node-input-options').val(options);
+        } catch (err) {
+          console.error('Error saving options:', err);
+        }
+      });
+    },
+    oneditsave: function() {
+      // Save the configuration
+      this.name = $('#node-config-input-name').val();
+      this.llmConfig = $('#node-config-input-llmConfig').val();
+      this.role = $('#node-config-input-role').val();
+      this.debug = $('#node-config-input-debug').is(':checked');
+      this.options = $('#node-input-options').val() || '{}';
+    }
+  });
+  
+  // Add the node to the palette
+  RED.palette.createCategory('llm-nodes', {
+    label: 'LLM Nodes',
+    color: '#a6bbcf',
+    icon: 'fa-robot',
+    palette: {
+      category: 'AI/LLM',
+      color: '#a6bbcf'
+    }
+  });
+</script>
+
+<!-- Help text for the node -->
+<script type="text/html" data-help-name="llm-connector">
+  <p>Connects to an LLM provider using a configuration from an LLM Config node.</p>
+  <p><b>Inputs</b>: Messages to send to the LLM</p>
+  <p><b>Output 1</b>: LLM response</p>
+  <p><b>Output 2</b>: Error information if the request fails</p>
+  <p><b>Configuration</b>:</p>
+  <ul>
+    <li><b>Name</b>: Optional name for the node</li>
+    <li><b>LLM Config</b>: Select an LLM Config node with provider settings</li>
+    <li><b>Role</b>: The role to use for the LLM (e.g., assistant, summarizer)</li>
+    <li><b>Debug</b>: Enable to include additional debug information in the output</li>
+  </ul>
+</script>

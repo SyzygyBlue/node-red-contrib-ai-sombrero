@@ -6,6 +6,144 @@ AI Sombrero is a plug-and-play orchestration toolkit for Node-RED that enables i
 
 A powerful, modular AI workflow orchestration system built on Node-RED with support for multiple LLM providers, database backends, and queue management.
 
+## 🚀 LLM Connector Node
+
+The LLM Connector node enables seamless integration with various LLM providers using configurations from the LLM Config node. It handles message processing, role-based interactions, and error handling.
+
+### Features
+
+- **Multiple LLM Providers**: Connect to OpenAI, Anthropic, Azure OpenAI, and custom endpoints
+- **Role-Based Processing**: Define different roles (assistant, summarizer, etc.) for different use cases
+- **Debug Mode**: Enable detailed logging and metadata for troubleshooting
+- **Error Handling**: Comprehensive error handling with detailed error messages
+- **Audit Logging**: Track all LLM interactions for monitoring and debugging
+
+### Installation
+
+1. Install the package in your Node-RED environment:
+   ```bash
+   npm install node-red-contrib-ai-sombrero
+   ```
+2. Restart Node-RED
+3. The LLM nodes will be available in the "LLM" category in the node palette
+
+### Usage
+
+1. **Add an LLM Config Node**
+   - Configure your LLM provider settings (API key, endpoint, etc.)
+   - Test the connection to ensure it works
+
+2. **Add an LLM Connector Node**
+   - Connect it to your LLM Config node
+   - Select a role for the LLM (e.g., assistant, summarizer)
+   - Enable debug mode if needed
+
+3. **Send Messages**
+   - Send messages to the node's input
+   - The LLM's response will be available at the first output
+   - Any errors will be sent to the second output
+
+### Example Flow
+
+Here's a simple example that uses the LLM Connector to process a message:
+
+```json
+[
+  {
+    "id": "llm-config-1",
+    "type": "llm-config",
+    "name": "OpenAI Config",
+    "provider": "openai",
+    "model": "gpt-4"
+  },
+  {
+    "id": "llm-connector-1",
+    "type": "llm-connector",
+    "name": "AI Assistant",
+    "llmConfig": "llm-config-1",
+    "role": "assistant",
+    "debug": true,
+    "wires": [
+      ["output-1"],
+      ["error-handler"]
+    ]
+  },
+  {
+    "id": "inject-1",
+    "type": "inject",
+    "name": "Send Message",
+    "payload": "Hello, how are you?",
+    "topic": "greeting",
+    "wires": [
+      ["llm-connector-1"]
+    ]
+  },
+  {
+    "id": "output-1",
+    "type": "debug",
+    "name": "LLM Response",
+    "active": true,
+    "complete": "payload",
+    "console": "false"
+  },
+  {
+    "id": "error-handler",
+    "type": "debug",
+    "name": "Error Handler",
+    "active": true,
+    "complete": "payload",
+    "console": "false"
+  }
+]
+```
+
+### Configuration
+
+#### LLM Connector Node
+
+- **Name**: A friendly name for the node
+- **LLM Config**: Select a configured LLM Config node
+- **Role**: The role for the LLM (e.g., assistant, summarizer)
+- **Debug**: Enable to include additional debug information in the output
+
+### Output
+
+The LLM Connector node has two outputs:
+
+1. **First Output (Success)**: Contains the LLM's response with the following structure:
+   ```javascript
+   {
+     payload: "LLM response text",
+     _llmMetadata: {
+       provider: "openai",
+       model: "gpt-4",
+       tokens: 15,
+       completionTokens: 5,
+       promptTokens: 10,
+       processingTime: 1234
+     },
+     _debug: {
+       // Debug information if enabled
+     }
+   }
+   ```
+
+2. **Second Output (Error)**: Contains error information if the request fails
+
+### Error Handling
+
+- Invalid configurations are caught during node initialization
+- LLM API errors are caught and sent to the second output
+- All errors include detailed error messages for debugging
+
+### Best Practices
+
+1. **Use Environment Variables** for sensitive information like API keys
+2. **Enable Debug Mode** when developing or troubleshooting
+3. **Implement Error Handling** to gracefully handle API failures
+4. **Monitor Usage** with the built-in audit logging
+5. **Test Thoroughly** with different message types and edge cases
+
 ## 📦 Project Structure
 
 ```
