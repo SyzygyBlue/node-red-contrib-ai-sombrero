@@ -165,10 +165,140 @@ async function testCustomConnection(endpoint, credentials) {
   return true; // Placeholder
 }
 
+/**
+ * Calls the LLM provider with the given parameters
+ * @param {string} provider - The provider name
+ * @param {Object} config - The configuration object
+ * @param {Object} credentials - The credentials object
+ * @param {Object} params - The parameters for the LLM call
+ * @returns {Promise<Object>} The LLM response
+ */
+async function callLLM(provider, config, credentials, params) {
+  const { prompt, max_tokens = 1000, temperature = 0.7, stop = null } = params;
+  
+  try {
+    switch (provider) {
+      case 'openai':
+        return callOpenAI(credentials.apiKey, { prompt, max_tokens, temperature, stop });
+      case 'anthropic':
+        return callAnthropic(credentials.apiKey, { prompt, max_tokens, temperature, stop });
+      case 'azure':
+        return callAzure(config.endpoint, credentials.apiKey, { prompt, max_tokens, temperature, stop });
+      case 'custom':
+        return callCustomEndpoint(config.endpoint, credentials, { prompt, max_tokens, temperature, stop });
+      default:
+        throw new Error(`Unsupported provider: ${provider}`);
+    }
+  } catch (error) {
+    auditLogger.error({
+      event: 'llm_call_failed',
+      provider,
+      error: error.message,
+      params: { ...params, prompt: params.prompt?.substring(0, 100) + '...' }
+    });
+    throw error;
+  }
+}
+
+/**
+ * Calls the OpenAI API
+ */
+async function callOpenAI(apiKey, { prompt, max_tokens, temperature, stop }) {
+  const openai = require('openai');
+  const client = new openai.OpenAI({ apiKey });
+  
+  const response = await client.completions.create({
+    model: 'gpt-3.5-turbo-instruct',
+    prompt,
+    max_tokens,
+    temperature,
+    stop,
+  });
+  
+  return {
+    text: response.choices[0].text,
+    usage: response.usage,
+    model: response.model,
+    created: response.created
+  };
+}
+
+/**
+ * Calls the Anthropic API
+ */
+async function callAnthropic(apiKey, { prompt, max_tokens, temperature, stop }) {
+  const { Anthropic } = require('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey });
+  
+  const response = await client.completions.create({
+    model: 'claude-2',
+    prompt: `\n\nHuman: ${prompt}\n\nAssistant:`,
+    max_tokens_to_sample: max_tokens,
+    temperature,
+    stop_sequences: stop ? [stop] : undefined,
+  });
+  
+  return {
+    text: response.completion,
+    model: response.model,
+    stop_reason: response.stop_reason
+  };
+}
+
+/**
+ * Calls the Azure OpenAI API
+ */
+async function callAzure(endpoint, apiKey, { prompt, max_tokens, temperature, stop }) {
+  const openai = require('openai');
+  const client = new openai.OpenAI({
+    apiKey,
+    baseURL: `${endpoint}/openai/deployments/gpt-35-turbo/completions`,
+    defaultQuery: { 'api-version': '2023-05-15' },
+    defaultHeaders: { 'api-key': apiKey },
+  });
+  
+  const response = await client.completions.create({
+    model: 'gpt-35-turbo-instruct',
+    prompt,
+    max_tokens,
+    temperature,
+    stop,
+  });
+  
+  return {
+    text: response.choices[0].text,
+    usage: response.usage,
+    model: response.model
+  };
+}
+
+/**
+ * Calls a custom LLM endpoint
+ */
+async function callCustomEndpoint(endpoint, credentials, { prompt, max_tokens, temperature, stop }) {
+  const axios = require('axios');
+  
+  const response = await axios.post(endpoint, {
+    prompt,
+    max_tokens,
+    temperature,
+    stop,
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(credentials.apiKey && { 'Authorization': `Bearer ${credentials.apiKey}` })
+    },
+    timeout: 30000 // 30 seconds timeout
+  });
+  
+  return response.data;
+}
+
 module.exports = {
   validateConfig,
   normalizeConfig,
   encrypt,
   decrypt,
-  testConnection
+  testConnection,
+  callLLM
 };

@@ -21,9 +21,15 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "node-red": "^3.0.0"
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "lodash": "^4.17.21",
+    "node-red": "^3.0.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
     "@types/jest": "^29.5.0",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",

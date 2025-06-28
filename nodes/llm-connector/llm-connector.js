@@ -80,6 +80,97 @@ module.exports = function (RED) {
       this.status({});
       done();
     });
+
+    // Initialize prompt enhancer UI if available
+    if (typeof PromptEnhancerUI === 'function') {
+      try {
+        // Get the container for the prompt enhancer
+        const container = document.getElementById('node-prompt-enhancer-container');
+        
+        if (container) {
+          // Create a function to call the LLM for enhancement
+          const callLLM = async (params) => {
+            try {
+              // Get the LLM config node
+              const llmConfig = RED.nodes.node($('#node-config-input-llmConfig').val());
+              if (!llmConfig) {
+                throw new Error('LLM Config is required');
+              }
+              
+              // Call the LLM through the config node
+              const response = await llmConfig.callLLM({
+                prompt: params.prompt,
+                max_tokens: params.max_tokens,
+                temperature: params.temperature || 0.7,
+                stop: params.stop || ['"""']
+              });
+              
+              return {
+                text: response.choices?.[0]?.text || response.text || '',
+                usage: response.usage || {}
+              };
+            } catch (error) {
+              console.error('Error calling LLM for prompt enhancement:', error);
+              throw error;
+            }
+          };
+          
+          // Initialize the prompt enhancer UI
+          const enhancerUI = new PromptEnhancerUI({
+            containerId: 'node-prompt-enhancer-container',
+            onEnhance: async (original, instructions) => {
+              try {
+                // Call the LLM to enhance the prompt
+                const enhanced = await callLLM({
+                  prompt: `Enhance the following prompt based on these instructions:\n\nOriginal: ${original}\n\nInstructions: ${instructions}\n\nEnhanced:`,
+                  max_tokens: 500,
+                  temperature: 0.7
+                });
+                
+                return enhanced.text || original;
+              } catch (error) {
+                console.error('Error enhancing prompt:', error);
+                return original; // Return original on error
+              }
+            },
+            styles: {
+              // Customize styles to match Node-RED theme
+              dialog: {
+                backgroundColor: '#f3f3f3',
+                borderRadius: '4px',
+                padding: '15px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+              },
+              button: {
+                backgroundColor: '#4e8cff',
+                color: 'white',
+                border: 'none',
+                padding: '5px 10px',
+                borderRadius: '3px',
+                cursor: 'pointer'
+              }
+            }
+          });
+          
+          // Handle the enhance button click
+          $('#node-config-enhance-prompt').on('click', function() {
+            const currentPrompt = $('#node-config-input-prompt').val() || '';
+            enhancerUI.open(currentPrompt);
+          });
+          
+          // Clean up when the dialog is closed
+          $(document).on('dialogclosed', function() {
+            // Any cleanup if needed
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing prompt enhancer UI:', error);
+      }
+    } else if (typeof $ !== 'undefined' && $('#node-config-enhance-prompt').length) {
+      // Hide the enhance button if the UI component is not available
+      // Only if jQuery is available and the element exists
+      $('#node-config-enhance-prompt').hide();
+    }
   }
 
   // Register the node
