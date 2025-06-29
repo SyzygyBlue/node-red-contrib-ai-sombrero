@@ -5,8 +5,16 @@
 
 const { normalizeMessage } = require('./validation/message-normalizer');
 const { processLLMOutput } = require('./validation/output-processor');
-const { buildPrompt } = require('./prompt/prompt-builder');
-const { RoleManager, defaultRoleManager } = require('./prompt/role-manager');
+const { 
+  buildPrompt,
+  validatePrompt,
+  estimateTokenCount,
+  RoleManager,
+  MessageFormatter,
+  template,
+  defaultRoleManager,
+  defaultPromptBuilder
+} = require('./prompt');
 const { createLLMClient } = require('./integration');
 const { createDebugContext } = require('./utils');
 
@@ -134,19 +142,25 @@ async function processMessage(msg, node) {
 module.exports = {
   // Core message processing
   validateMessage,
-  normalizeMessage,
   processMessage,
   
-  // Prompt building
+  // Prompt building and management
   buildPrompt,
+  validatePrompt,
+  estimateTokenCount,
   
-  // Role management
+  // Role and template management
   RoleManager,
-  defaultRoleManager,
+  MessageFormatter,
+  template,
   
-  // Integration
+  // Default instances
+  defaultRoleManager,
+  defaultPromptBuilder,
+  
+  // LLM client
   createLLMClient,
   
-  // Re-export commonly used utilities
-  ...require('./utils')
+  // Debug utilities
+  createDebugContext
 };

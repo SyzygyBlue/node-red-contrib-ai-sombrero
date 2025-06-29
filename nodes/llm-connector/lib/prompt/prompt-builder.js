@@ -5,89 +5,105 @@
 
 const { LLMError, ERROR_CODES } = require('../validation/error-types');
 const { handleLLMError } = require('../utils/error-handler');
+const MessageFormatter = require('./message-formatter');
+const RoleManager = require('./role-manager');
 
-/**
- * Builds a prompt from a message object
- * @param {Object} message - The message object containing prompt information
- * @param {Object} options - Additional options for prompt building
- * @returns {string} The formatted prompt
- * @throws {LLMError} If prompt building fails
- */
-function buildPrompt(message, options = {}) {
-  try {
-    if (!message || typeof message !== 'object') {
-      throw new LLMError('Invalid message: expected an object', ERROR_CODES.INVALID_INPUT);
-    }
+class PromptBuilder {
+  /**
+   * Create a new PromptBuilder
+   * @param {Object} roleManager - Instance of RoleManager
+   */
+  constructor(roleManager) {
+    this.formatter = new MessageFormatter(roleManager);
+  }
 
-    const { role, content, messages } = message._llm || {};
-    
-    // If we have a messages array, use that to build the prompt
-    if (Array.isArray(messages) && messages.length > 0) {
-      return messages
-        .map(msg => {
-          // Handle different message formats
-          if (typeof msg === 'string') {
-            return msg;
-          } else if (msg.content) {
-            return `${msg.role || 'user'}: ${msg.content}`;
-          }
-          return '';
-        })
-        .filter(Boolean)
-        .join('\n\n');
+  /**
+   * Builds a prompt from a message object
+   * @param {Object} message - The message object containing prompt information
+   * @param {Object} options - Additional options for prompt building
+   * @returns {string} The formatted prompt
+   * @throws {LLMError} If prompt building fails
+   */
+  buildPrompt(message, options = {}) {
+    try {
+      if (!message || typeof message !== 'object') {
+        throw new LLMError('Invalid message: expected an object', ERROR_CODES.INVALID_INPUT);
+      }
+
+      const { role = 'user', messages } = message._llm || {};
+      
+      // If we have a messages array, format the conversation
+      if (Array.isArray(messages) && messages.length > 0) {
+        return this.formatter.formatConversation(messages, options);
+      }
+      
+      // Single message with role
+      if (message.content || message.payload) {
+        return this.formatter.formatMessage(message, role, options);
+      }
+      
+      throw new LLMError(
+        'Could not build prompt: message must contain _llm.messages, content, or payload',
+        ERROR_CODES.INVALID_INPUT
+      );
+    } catch (error) {
+      handleLLMError(error, 'Failed to build prompt');
+      throw error;
     }
-    
-    // Fall back to simple role/content format
-    if (content) {
-      return `${role || 'user'}: ${content}`;
+  }
+
+  /**
+   * Validates a prompt before sending to the LLM
+   * @param {string|Object} prompt - The prompt to validate (string or message object)
+   * @returns {Object} Validation result
+   */
+  validatePrompt(prompt) {
+    try {
+      // If it's a message object, build the prompt first
+      const promptString = typeof prompt === 'string' 
+        ? prompt 
+        : this.buildPrompt(prompt);
+
+      if (!promptString.trim()) {
+        return {
+          valid: false,
+          error: 'Prompt cannot be empty',
+          code: ERROR_CODES.VALIDATION_ERROR
+        };
+      }
+
+      // Add more validation rules as needed
+
+      return { 
+        valid: true,
+        length: promptString.length,
+        estimatedTokens: Math.ceil(promptString.length / 4) // Rough estimate
+      };
+    } catch (error) {
+      return {
+        valid: false,
+        error: error.message,
+        code: error.code || ERROR_CODES.VALIDATION_ERROR,
+        details: error.details
+      };
     }
-    
-    // If we have a payload, use that as the prompt
-    if (message.payload !== undefined) {
-      return String(message.payload);
+  }
+
+  /**
+   * Get the estimated token count for a prompt
+   * @param {string|Object} prompt - The prompt to analyze
+   * @returns {number} Estimated token count
+   */
+  estimateTokenCount(prompt) {
+    const result = this.validatePrompt(prompt);
+    if (!result.valid) {
+      throw new LLMError(
+        `Cannot estimate tokens for invalid prompt: ${result.error}`,
+        result.code
+      );
     }
-    
-    throw new LLMError(
-      'Could not build prompt: no valid content found in message',
-      ERROR_CODES.INVALID_INPUT
-    );
-  } catch (error) {
-    const { error: llmError } = handleLLMError(error, {
-      event: 'prompt_build_error',
-      nodeId: message?._llm?.nodeId,
-      role: message?.role
-    });
-    
-    throw llmError;
+    return result.estimatedTokens;
   }
 }
 
-/**
- * Validates a prompt before sending to the LLM
- * @param {string} prompt - The prompt to validate
- * @returns {Object} Validation result
- */
-function validatePrompt(prompt) {
-  if (typeof prompt !== 'string') {
-    return {
-      valid: false,
-      error: new LLMError('Prompt must be a string', ERROR_CODES.INVALID_INPUT)
-    };
-  }
-  
-  if (!prompt.trim()) {
-    return {
-      valid: false,
-      error: new LLMError('Prompt cannot be empty', ERROR_CODES.INVALID_INPUT)
-    };
-  }
-  
-  // Add any additional validation rules here
-  
-  return { valid: true };
-}
-
-module.exports = {
-  buildPrompt,
-  validatePrompt
-};
+module.exports = PromptBuilder;
