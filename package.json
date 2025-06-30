@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-ai-sombrero",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "AI Workflow Orchestration for Node-RED",
   "main": "index.js",
   "scripts": {
@@ -12,11 +12,23 @@
     "format": "prettier --write .",
     "prepare": "husky install"
   },
+  "node-red": {
+    "version": ">=3.0.0",
+    "nodes": {
+      "llm-config": "nodes/llm-config/llm-config.js",
+      "llm-connector": "nodes/llm-connector/llm-connector.js",
+      "mcp-node": "nodes/mcp-node/mcp-node.js",
+      "dbconfig-node": "nodes/dbconfig-node/dbconfig.js"
+    }
+  },
   "keywords": [
     "node-red",
     "ai",
     "workflow",
-    "automation"
+    "automation",
+    "llm",
+    "language-model",
+    "orchestration"
   ],
   "author": "",
   "license": "MIT",
@@ -25,7 +37,14 @@
     "ajv-formats": "^3.0.1",
     "lodash": "^4.17.21",
     "node-red": "^3.0.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "pg": "^8.11.3",
+    "mysql2": "^3.9.1",
+    "sqlite3": "^5.1.7",
+    "axios": "^1.6.5",
+    "openai": "^4.24.1",
+    "anthropic": "0.0.0",
+    "handlebars": "^4.7.8"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
@@ -40,7 +59,6 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-promise": "^6.1.1",
-    "handlebars": "^4.7.8",
     "husky": "^8.0.0",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",

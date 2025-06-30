@@ -6,7 +6,7 @@
 const path = require('path');
 const { LLMError, ERROR_CODES } = require('../validation/error-types');
 const { handleLLMError } = require('../utils/error-handler');
-const { auditLogger } = require(path.join(process.cwd(), 'services', 'audit-service'));
+const { auditLogger } = require('../../../../services/audit-service');
 
 class LLMClient {
   /**

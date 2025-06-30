@@ -8,7 +8,7 @@
  * - Fallback mechanisms
  */
 
-const { createPromptEnhancer } = require('shared/prompt-enhancer');
+const { createPromptEnhancer } = require('../../../shared/prompt-enhancer');
 
 /**
  * Creates a routing service instance

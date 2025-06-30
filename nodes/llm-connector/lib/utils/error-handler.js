@@ -4,7 +4,7 @@
  */
 
 const path = require('path');
-const { auditLogger } = require(path.join(process.cwd(), 'services', 'audit-service'));
+const { auditLogger } = require('../../../../services/audit-service');
 const { LLMError, ERROR_CODES } = require('../validation/error-types');
 
 /**

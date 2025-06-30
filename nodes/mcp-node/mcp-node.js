@@ -9,7 +9,7 @@
 module.exports = function(RED) {
     "use strict";
     
-    const auditLogger = require('services/audit-service');
+    const auditLogger = require('../../services/audit-service');
     const { createRoutingService } = require('./lib/routing-service');
     const { processMessage, evaluateRules, prepareAIPrompt } = require('./lib/mcp-node-helpers');
     const uiHandler = require('./lib/ui-handler')(RED);

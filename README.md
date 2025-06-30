@@ -2,9 +2,23 @@
 
 [![CI](https://github.com/SyzygyBlue/node-red-contrib-ai-sombrero/actions/workflows/ci.yml/badge.svg)](https://github.com/SyzygyBlue/node-red-contrib-ai-sombrero/actions/workflows/ci.yml) [![Keep a Changelog](https://img.shields.io/badge/Changelog-Keep%20a%20Changelog-%23E05735)](CHANGELOG.md)
 
-AI Sombrero is a plug-and-play orchestration toolkit for Node-RED that enables intelligent automation chains—put a hat on it and let the Sombrero drive.
+AI Sombrero is a plug-and-play orchestration toolkit for Node-RED that enables large language models (LLMs) to work together like a team of expert agents—each wearing a different "hat."
 
-A powerful, modular AI workflow orchestration system built on Node-RED with support for multiple LLM providers, database backends, and queue management.
+With support for OpenAI, Anthropic, Gemini, and other LLMs, this project introduces:
+
+Role-based LLM connector nodes that behave like software architects, project managers, or devops engineers—each with its own prompt stack and decision logic.
+
+The MCP (“Master Control Program”) node—the Sombrero—which routes tasks intelligently to the right expert.
+
+Persistent task queues, dead-letter recovery, and retry logic.
+
+Modular backend services for databases, audits, queues, and AI integrations.
+
+Built-in observability, testing, and CI/CD support for production-grade deployment.
+
+Inspired by the power of prompt specialization and multi-agent coordination, AI Sombrero makes Node-RED a serious platform for composable, AI-assisted workflows and task decomposition pipelines.
+
+Whether you're building autonomous task agents, document processors, or intelligent automation chains—put a hat on it and let the Sombrero drive.
 
 ## 🚀 LLM Connector Node
 
@@ -144,18 +158,121 @@ The LLM Connector node has two outputs:
 4. **Monitor Usage** with the built-in audit logging
 5. **Test Thoroughly** with different message types and edge cases
 
+## 🎩 MCP Node
+
+The Master Control Program (MCP) node, also known as the Sombrero, is designed for intelligent routing and orchestration of AI workflows. It dynamically routes messages based on AI-powered decisions or predefined rules, enhancing messages through a configurable pipeline.
+
+### Features
+
+- **Dynamic Routing**: Route messages based on AI insights or explicit rules.
+- **Message Enhancement**: Enrich and transform messages using a configurable pipeline.
+- **Prompt Enhancer Integration**: Seamlessly integrate with the shared prompt enhancer module.
+- **Decision Logging**: Comprehensive logging of routing decisions and message transformations for debugging and auditing.
+
+### Usage
+
+1. **Configure Routing**: Define AI-powered routing logic or rule-based conditions within the node's configuration.
+2. **Connect Inputs/Outputs**: Connect the MCP node to upstream and downstream nodes in your Node-RED flow.
+3. **Monitor Decisions**: Utilize the debug output to observe routing decisions and message transformations.
+
+## 🗄️ Database Config Node
+
+The Database Config node provides a centralized way to manage database connections within your Node-RED flows. It supports various database types and ensures secure handling of credentials.
+
+### Features
+
+- **Centralized Configuration**: Define and reuse database connection settings across multiple nodes.
+- **Secure Credential Management**: Encrypt and securely store database credentials.
+- **Connection Testing**: Verify database connectivity directly from the Node-RED editor.
+
+### Usage
+
+1. **Add a Database Config Node**: Configure your database type, host, port, credentials, and other settings.
+2. **Reference in Other Nodes**: Use this configuration node in other Node-RED nodes that require database access.
+
+## 🛠️ Development
+
+### GitHub Repository
+
+This project is hosted on GitHub at:
+[github.com/SyzygyBlue/node-red-contrib-ai-sombrero](https://github.com/SyzygyBlue/node-red-contrib-ai-sombrero)
+
+### Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/your-username/node-red-contrib-ai-sombrero.git
+   cd node-red-contrib-ai-sombrero
+   ```
+3. **Create a new branch** for your changes:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+4. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+5. **Make your changes** and test them
+6. **Run tests** to ensure everything works:
+   ```bash
+   npm test
+   ```
+7. **Commit your changes** with a descriptive message:
+   ```bash
+   git commit -m "Add: Description of your changes"
+   ```
+8. **Push to your fork** and create a Pull Request
+
+### Development Setup
+
+1. **Link the package** for local development:
+   ```bash
+   npm link
+   cd ~/.node-red
+   npm link node-red-contrib-ai-sombrero
+   ```
+
+2. **Start Node-RED** with your local changes:
+   ```bash
+   node-red
+   ```
+
+### Building for Release
+
+To create a new release:
+
+1. Update the version in `package.json` following [semantic versioning](https://semver.org/)
+2. Update `CHANGELOG.md` with the changes
+3. Build the package:
+   ```bash
+   npm run build
+   ```
+4. Create a git tag for the release:
+   ```bash
+   git tag -a v1.0.0 -m "Version 1.0.0"
+   git push origin v1.0.0
+   ```
+5. Publish to npm (if you have permissions):
+   ```bash
+   npm publish
+   ```
+
 ## 📦 Project Structure
 
 ```
 .
-├── src/                    # Source code
-│   ├── nodes/              # Node-RED node implementations
-│   ├── helpers/            # Helper functions
-│   ├── services/           # Shared services
-│   └── utils/              # Utility functions
-├── tests/                  # Test files
-├── docs/                   # Documentation
-└── .gitignore             # Git ignore file
+├── nodes/                    # Node-RED node implementations
+│   ├── llm-connector/
+│   ├── mcp-node/
+│   └── dbconfig-node/
+├── shared/                   # Shared modules and services (e.g., prompt-enhancer)
+├── tests/                    # Test files
+├── docker/                   # Docker-related files
+├── project-tasks/            # Project task documentation
+└── .gitignore                # Git ignore file
 ```
 
 ## 📜 Changelog
@@ -217,23 +334,3 @@ npm test
 ## License
 
 MIT
-=======
-# node-red-contrib-ai-sombrero
-AI Sombrero is a plug-and-play orchestration toolkit for Node-RED that enables large language models (LLMs) to work together like a team of expert agents—each wearing a different "hat."
-
-With support for OpenAI, Anthropic, Gemini, and other LLMs, this project introduces:
-
-Role-based LLM connector nodes that behave like software architects, project managers, or devops engineers—each with its own prompt stack and decision logic.
-
-The MCP (“Master Control Program”) node—the Sombrero—which routes tasks intelligently to the right expert.
-
-Persistent task queues, dead-letter recovery, and retry logic.
-
-Modular backend services for databases, audits, queues, and AI integrations.
-
-Built-in observability, testing, and CI/CD support for production-grade deployment.
-
-Inspired by the power of prompt specialization and multi-agent coordination, AI Sombrero makes Node-RED a serious platform for composable, AI-assisted workflows and task decomposition pipelines.
-
-Whether you're building autonomous task agents, document processors, or intelligent automation chains—put a hat on it and let the Sombrero drive.
->>>>>>> 7bf382dd706d74f7537555d0e9632dcd73197275

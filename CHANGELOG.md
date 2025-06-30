@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **MCP Node**
+  - Dynamic output generation with AI-powered and rule-based routing
+  - Message enhancement pipeline with context enrichment and transformations
+  - Integration with the prompt enhancer module
+  - Comprehensive decision logging and debugging features
+- **Database Config Node**
+  - Configuration for database connections
+
+### Changed
+- N/A
+
+### Fixed
+- Stabilized MCP node and LLM connector unit tests, resolved Jest module resolution and mock scope issues.
+
+### Removed
+- N/A
+
+## [0.2.0] - 2025-06-30
+
+### Added
 - **LLM Connector Node**
   - Integration with LLM Config node for provider settings
   - Role-based message processing (assistant, summarizer, etc.)

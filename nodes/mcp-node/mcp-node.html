@@ -1,7 +1,7 @@
 <!-- MCP Node Registration -->
 <script type="text/javascript">
     RED.nodes.registerType('mcp-node', {
-        category: 'AI',
+        category: 'Sombrero-AI',
         color: '#a6bbcf',
         defaults: {
             name: { value: "" },
@@ -18,7 +18,7 @@
         outputLabels: function(index) {
             return this.outputLabels ? this.outputLabels[index] : "output " + index;
         },
-        icon: "font-awesome/fa-random",
+        icon: "font-awesome/fa-network-wired",
         label: function() {
             return this.name || "MCP";
         },
