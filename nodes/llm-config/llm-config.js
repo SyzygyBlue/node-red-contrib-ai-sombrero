@@ -101,6 +101,7 @@ module.exports = function (RED) {
 
   // Register the node
   RED.nodes.registerType('llm-config', LLMConfigNode, {
+    category: 'config', // Add this line
     credentials: {
       apiKey: { type: 'password' },
       apiSecret: { type: 'password' },

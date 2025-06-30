@@ -8,7 +8,7 @@
  * - Decision logging
  */
 
-const { createPromptEnhancer } = require('shared/prompt-enhancer');
+const { createPromptEnhancer } = require('../../../shared/prompt-enhancer');
 
 /**
  * Process and enhance a message based on configuration

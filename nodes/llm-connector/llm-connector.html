@@ -139,7 +139,7 @@
   'use strict';
   
   RED.nodes.registerType('llm-connector', {
-    category: 'AI/LLM',
+    category: 'Sombrero-AI',
     color: '#a6bbcf',
     defaults: {
       name: { value: '' },
@@ -394,23 +394,7 @@
     }
   });
   
-  // Add the node to the palette
-  RED.palette.createCategory('Sombrero-AI', {
-    label: 'Sombrero-AI',
-    color: '#a6bbcf',
-    icon: 'font-awesome/fa-robot',
-    nodes: [
-      { type: 'llm-connector', label: 'LLM Connector',
-        paletteLabel: 'LLM Connector',
-        description: 'Connect to various LLM providers with a unified interface',
-        inputs: 1,
-        outputs: 2,
-        icon: 'font-awesome/fa-robot',
-        color: '#a6bbcf',
-        align: 'left'
-      }
-    ]
-  });
+
 </script>
 
 <!-- Help text for the node -->

@@ -1,6 +1,9 @@
 module.exports = function(RED) {
+    const path = require('path');
+
     function DbConfigNode(config) {
         RED.nodes.createNode(this, config);
+        const node = this;
         this.name = config.name;
         this.dbType = config.dbType;
         this.host = config.host;
@@ -8,9 +11,9 @@ module.exports = function(RED) {
         this.user = config.user;
         this.password = config.password;
         this.database = config.database;
-        this.filename = config.filename;
+        this.filename = config.filename || path.join(RED.settings.userDir, 'sqlite-default.db');
 
-        const node = this;
+        node.log(`SQLite filename: ${node.filename}`);
 
         // This will store the database connection object
         node.connection = null;
@@ -103,6 +106,7 @@ module.exports = function(RED) {
     }
 
     RED.nodes.registerType("dbconfig", DbConfigNode, {
+        category: "config", // Add this line
         credentials: {
             password: { type: "password" }
         }
