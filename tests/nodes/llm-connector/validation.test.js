@@ -6,7 +6,7 @@
 'use strict';
 
 // Import the module to test
-const { validateMessage } = require('nodes/llm-connector/llm-connector-helpers');
+const { validateMessage, normalizeMessage } = require('nodes/llm-connector/llm-connector-helpers');
 
 // Mock dependencies
 jest.mock('services/audit-service');
@@ -67,9 +67,9 @@ describe('LLM Connector - Message Validation', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
   
-  test('should validate message with node configuration', () => {
+  test('should validate message with node configuration', async () => {
     const msg = { payload: 'test' };
-    const node = { 
+    const node = {
       id: 'test-node',
       role: 'assistant',
       debug: true,
@@ -79,8 +79,9 @@ describe('LLM Connector - Message Validation', () => {
         apiKey: 'test-key'
       }
     };
-    
-    const result = validateMessage(msg, node);
+
+    const validatedMsg = validateMessage(msg, node);
+    const result = await normalizeMessage(validatedMsg, node);
     expect(result._llm).toBeDefined();
     expect(result._llm.nodeId).toBe('test-node');
   });

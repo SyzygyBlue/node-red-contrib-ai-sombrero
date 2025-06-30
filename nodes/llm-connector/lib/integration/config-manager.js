@@ -164,8 +164,7 @@ function createLLMClient(config) {
       LLMClient = require(`./providers/${provider}-client`);
     } catch (error) {
       // Fall back to the generic client
-      const { LLMClient: GenericLLMClient } = require('./llm-client');
-      LLMClient = GenericLLMClient;
+      LLMClient = require('./llm-client');
     }
     
     return new LLMClient(normalizedConfig);

@@ -134,7 +134,7 @@ describe('LLM Utils', () => {
       
       expect(() => {
         processLLMResponse(response, { validateSchema: true, schema });
-      }).toThrow('Response validation failed');
+      }).toThrow('Schema validation process failed');
     });
   });
   

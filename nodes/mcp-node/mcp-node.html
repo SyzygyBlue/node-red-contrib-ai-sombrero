@@ -1,0 +1,132 @@
+<!-- MCP Node Registration -->
+<script type="text/javascript">
+    RED.nodes.registerType('mcp-node', {
+        category: 'AI',
+        color: '#a6bbcf',
+        defaults: {
+            name: { value: "" },
+            routingMode: { value: "rule" },
+            rules: { value: [] },
+            outputLabels: { value: ["Output 1", "Output 2"] },
+            aiPromptTemplate: { value: "" },
+            llmConfig: { type: "llm-config", required: false },
+            fallbackOutput: { value: -1 },
+            debugMode: { value: false }
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: function(index) {
+            return this.outputLabels ? this.outputLabels[index] : "output " + index;
+        },
+        icon: "font-awesome/fa-random",
+        label: function() {
+            return this.name || "MCP";
+        },
+        oneditprepare: function() {
+            // Load external editor scripts
+            $.getScript('mcp-node/ui/editor.js');
+        },
+        oneditsave: function() {
+            // Collect data from UI components
+            if (typeof window.mcpNodeSaveData === 'function') {
+                const data = window.mcpNodeSaveData();
+                this.rules = data.rules;
+                this.outputLabels = data.outputLabels;
+                this.aiPromptTemplate = data.aiPromptTemplate;
+            }
+        },
+        oneditresize: function() {
+            // Resize UI components
+            if (typeof window.mcpNodeResize === 'function') {
+                window.mcpNodeResize();
+            }
+        }
+    });
+</script>
+
+<!-- MCP Node Editor Template -->
+<script type="text/html" data-template-name="mcp-node">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-routingMode"><i class="fa fa-random"></i> Routing Mode</label>
+        <select id="node-input-routingMode">
+            <option value="rule">Rule-based</option>
+            <option value="ai">AI-powered</option>
+            <option value="hybrid">Hybrid (Rules + AI)</option>
+        </select>
+    </div>
+    
+    <div class="form-row" id="llm-config-row">
+        <label for="node-input-llmConfig"><i class="fa fa-cog"></i> LLM Config</label>
+        <input type="text" id="node-input-llmConfig">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-fallbackOutput"><i class="fa fa-life-ring"></i> Fallback</label>
+        <select id="node-input-fallbackOutput">
+            <option value="-1">None</option>
+            <option value="0">Output 1</option>
+            <option value="1">Output 2</option>
+        </select>
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-debugMode"><i class="fa fa-bug"></i> Debug Mode</label>
+        <input type="checkbox" id="node-input-debugMode" style="display:inline-block; width:auto; vertical-align:top;">
+    </div>
+    
+    <!-- Tabs for different configuration sections -->
+    <div class="form-row">
+        <ul style="background: #fff; margin-bottom: 0px;" id="mcp-node-tabs"></ul>
+    </div>
+    
+    <!-- Tab content container -->
+    <div id="mcp-node-tab-content" style="min-height: 300px;"></div>
+</script>
+
+<!-- MCP Node Help -->
+<script type="text/html" data-help-name="mcp-node">
+    <p>A node that provides dynamic routing capabilities with both AI-powered and rule-based decision making.</p>
+    
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload
+            <span class="property-type">any</span>
+        </dt>
+        <dd>The message payload to be routed.</dd>
+    </dl>
+    
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>outputs
+            <span class="property-type">multiple</span>
+        </dt>
+        <dd>Messages are routed to one or more outputs based on rules or AI decisions.</dd>
+    </dl>
+    
+    <h3>Details</h3>
+    <p>The MCP (Multi-Component Processing) node allows you to route messages to different outputs based on:</p>
+    <ul>
+        <li><b>Rule-based routing:</b> Define rules with conditions to route messages</li>
+        <li><b>AI-powered routing:</b> Use LLM to analyze message content and decide routing</li>
+        <li><b>Hybrid routing:</b> Combine rules and AI for sophisticated routing logic</li>
+    </ul>
+    
+    <p>The node supports dynamic output configuration, fallback mechanisms, and comprehensive debugging.</p>
+</script>
+
+<!-- Load External UI Components -->
+<script type="text/javascript">
+    // Register HTTP endpoint for loading UI components
+    RED.httpAdmin.get('/mcp-node/ui/*', function(req, res) {
+        const options = {
+            root: __dirname + '/lib/ui/',
+            dotfiles: 'deny'
+        };
+        res.sendFile(req.params[0], options);
+    });
+</script>

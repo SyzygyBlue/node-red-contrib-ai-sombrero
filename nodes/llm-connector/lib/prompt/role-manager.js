@@ -11,19 +11,19 @@ const { validateTemplate } = require('./template-utils');
 const DEFAULT_ROLES = {
   system: {
     description: 'System instructions and context',
-    template: 'You are a helpful AI assistant.',
+    template: 'system: You are a helpful AI assistant.',
     inherits: null,
     variables: {}
   },
   user: {
     description: 'User input or query',
-    template: '{{content}}',
+    template: 'user: {{content}}',
     inherits: null,
     variables: {}
   },
   assistant: {
     description: 'AI assistant response',
-    template: '{{content}}',
+    template: 'assistant: {{content}}',
     inherits: null,
     variables: {}
   },

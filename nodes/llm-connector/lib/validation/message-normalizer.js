@@ -43,31 +43,24 @@ async function normalizeMessage(msg, node = {}) {
       // Add timestamp if not present
       timestamp: existingLLM.timestamp || new Date().toISOString(),
       
-      // Add debug info if enabled
-      ...(node.debug && {
-        _debug: {
-          nodeId: node.id,
-          nodeName: node.name,
-          timestamp: new Date().toISOString()
-        }
-      })
+
     };
 
-    // Handle payload - convert to string if it's an object or array
-    if (normalizedMsg.payload !== undefined && normalizedMsg.payload !== null) {
-      if (typeof normalizedMsg.payload === 'object' || Array.isArray(normalizedMsg.payload)) {
-        try {
-          normalizedMsg.payload = JSON.stringify(normalizedMsg.payload);
-        } catch (error) {
-          throw new LLMError(
-            'Failed to stringify message payload',
-            ERROR_CODES.INVALID_INPUT,
-            { originalError: error }
-          );
-        }
-      } else if (typeof normalizedMsg.payload !== 'string') {
-        normalizedMsg.payload = String(normalizedMsg.payload);
+    // Handle payload
+    if (normalizedMsg.payload === undefined || normalizedMsg.payload === null) {
+      normalizedMsg.payload = ''; // Convert to empty string
+    } else if (typeof normalizedMsg.payload === 'object' || Array.isArray(normalizedMsg.payload)) {
+      try {
+        normalizedMsg.payload = JSON.stringify(normalizedMsg.payload);
+      } catch (error) {
+        throw new LLMError(
+          'Failed to stringify message payload',
+          ERROR_CODES.INVALID_INPUT,
+          { originalError: error }
+        );
       }
+    } else if (typeof normalizedMsg.payload !== 'string') {
+      normalizedMsg.payload = String(normalizedMsg.payload);
     }
 
     // Ensure messages array has at least one message if payload exists
@@ -78,6 +71,15 @@ async function normalizeMessage(msg, node = {}) {
           content: normalizedMsg.payload
         }
       ];
+    }
+
+    // Add debug info if enabled at the top level
+    if (node.debug) {
+      normalizedMsg._debug = {
+        nodeId: node.id,
+        nodeName: node.name,
+        timestamp: new Date().toISOString()
+      };
     }
 
     return normalizedMsg;

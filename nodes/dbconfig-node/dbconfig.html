@@ -1,0 +1,112 @@
+<script type="text/html" data-template-name="dbconfig">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-dbType"><i class="fa fa-database"></i> Database Type</label>
+        <select id="node-input-dbType">
+            <option value="postgresql">PostgreSQL</option>
+            <option value="mysql">MySQL</option>
+            <option value="sqlite">SQLite</option>
+        </select>
+    </div>
+    <div class="form-row" id="db-host-row">
+        <label for="node-input-host"><i class="fa fa-server"></i> Host</label>
+        <input type="text" id="node-input-host" placeholder="localhost">
+    </div>
+    <div class="form-row" id="db-port-row">
+        <label for="node-input-port"><i class="fa fa-plug"></i> Port</label>
+        <input type="text" id="node-input-port" placeholder="5432">
+    </div>
+    <div class="form-row" id="db-user-row">
+        <label for="node-input-user"><i class="fa fa-user"></i> User</label>
+        <input type="text" id="node-input-user" placeholder="user">
+    </div>
+    <div class="form-row" id="db-password-row">
+        <label for="node-input-password"><i class="fa fa-key"></i> Password</label>
+        <input type="password" id="node-input-password" placeholder="password">
+    </div>
+    <div class="form-row" id="db-database-row">
+        <label for="node-input-database"><i class="fa fa-book"></i> Database</label>
+        <input type="text" id="node-input-database" placeholder="database_name">
+    </div>
+    <div class="form-row" id="db-filename-row" style="display:none;">
+        <label for="node-input-filename"><i class="fa fa-file"></i> SQLite File</label>
+        <input type="text" id="node-input-filename" placeholder="/path/to/database.sqlite">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dbconfig">
+    <p>A Node-RED configuration node for managing database connections.</p>
+    <p>Supports PostgreSQL, MySQL, and SQLite.</p>
+    <h3>Details</h3>
+    <dl class="message-properties">
+        <dt>Name</dt>
+        <dd>A name for this database configuration.</dd>
+        <dt>Database Type</dt>
+        <dd>Select the type of database (PostgreSQL, MySQL, SQLite).</dd>
+        <dt>Host</dt>
+        <dd>The database host (e.g., <code>localhost</code>, <code>127.0.0.1</code>).</dd>
+        <dt>Port</dt>
+        <dd>The database port (e.g., <code>5432</code> for PostgreSQL, <code>3306</code> for MySQL).</dd>
+        <dt>User</dt>
+        <dd>The database username.</dd>
+        <dt>Password</dt>
+        <dd>The database password.</dd>
+        <dt>Database</dt>
+        <dd>The name of the database to connect to.</dd>
+        <dt>SQLite File</dt>
+        <dd>The path to the SQLite database file (only for SQLite).</dd>
+    </dl>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('dbconfig', {
+        category: 'config',
+        defaults: {
+            name: { value: "" },
+            dbType: { value: "postgresql", required: true },
+            host: { value: "localhost", required: true },
+            port: { value: "5432", required: true, validate: RED.validators.number() },
+            user: { value: "", required: true },
+            password: { value: "", required: true },
+            database: { value: "", required: true },
+            filename: { value: "" }
+        },
+        label: function() {
+            return this.name || "Database Config";
+        },
+        oneditprepare: function() {
+            const dbTypeField = $('#node-input-dbType');
+            const hostRow = $('#db-host-row');
+            const portRow = $('#db-port-row');
+            const userRow = $('#db-user-row');
+            const passwordRow = $('#db-password-row');
+            const databaseRow = $('#db-database-row');
+            const filenameRow = $('#db-filename-row');
+
+            function updateVisibility() {
+                const selectedType = dbTypeField.val();
+                if (selectedType === 'sqlite') {
+                    hostRow.hide();
+                    portRow.hide();
+                    userRow.hide();
+                    passwordRow.hide();
+                    databaseRow.hide();
+                    filenameRow.show();
+                } else {
+                    hostRow.show();
+                    portRow.show();
+                    userRow.show();
+                    passwordRow.show();
+                    databaseRow.show();
+                    filenameRow.hide();
+                }
+            }
+
+            dbTypeField.on('change', updateVisibility);
+            updateVisibility(); // Call on initial load
+        }
+    });
+</script>

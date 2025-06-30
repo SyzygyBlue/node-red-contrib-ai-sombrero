@@ -6,7 +6,7 @@
 module.exports = function (RED) {
   'use strict';
 
-  const helpers = require('./llm-config-helpers');
+  const { validateConfig, normalizeConfig } = require('./llm-config-helpers');
   const { auditLogger } = require('../../services/audit-service');
 
   function LLMConfigNode(config) {

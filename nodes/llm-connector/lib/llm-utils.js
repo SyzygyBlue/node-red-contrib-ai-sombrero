@@ -111,29 +111,38 @@ function processLLMResponse(response, { validateSchema = false, schema = null } 
   if (typeof result.text === 'string' && 
       (result.text.startsWith('{') || result.text.startsWith('['))) {
     try {
-      result.json = JSON.parse(result.text);
-      
-      // Validate against schema if provided
-      if (validateSchema && schema) {
-        const { valid, errors } = validateAgainstSchema(result.json, schema);
-        if (!valid) {
+      result.json = JSON.parse(response.text);
+    } catch (parseError) {
+      if (validateSchema) {
+        throw new LLMError(
+          'Failed to parse JSON response',
+          ERROR_CODES.PARSE_ERROR,
+          { originalError: parseError }
+        );
+      }
+      // If JSON parsing fails and schema validation is not expected, return original text
+      return result;
+    }
+
+    // Validate against schema if provided
+    if (validateSchema && schema) {
+      try {
+        const { errors } = validateAgainstSchema(result.json, schema);
+        if (errors) {
           throw new LLMError(
-            'Response validation failed', 
+            'Response validation failed',
             ERROR_CODES.VALIDATION_ERROR,
             { errors }
           );
         }
-      }
-    } catch (error) {
-      // If we expected JSON but couldn't parse it, that's an error
-      if (validateSchema) {
+      } catch (validationError) {
+        // Catch errors from validateAgainstSchema itself, not schema validation failures
         throw new LLMError(
-          'Failed to parse JSON response', 
-          ERROR_CODES.PARSE_ERROR,
-          { originalError: error }
+          'Schema validation process failed',
+          ERROR_CODES.VALIDATION_ERROR,
+          { originalError: validationError }
         );
       }
-      // Otherwise, we'll just return the text as-is
     }
   }
 

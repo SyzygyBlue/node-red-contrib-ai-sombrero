@@ -1,0 +1,110 @@
+module.exports = function(RED) {
+    function DbConfigNode(config) {
+        RED.nodes.createNode(this, config);
+        this.name = config.name;
+        this.dbType = config.dbType;
+        this.host = config.host;
+        this.port = config.port;
+        this.user = config.user;
+        this.password = config.password;
+        this.database = config.database;
+        this.filename = config.filename;
+
+        const node = this;
+
+        // This will store the database connection object
+        node.connection = null;
+
+        // Function to establish database connection
+        node.connect = async function() {
+            try {
+                if (node.connection) {
+                    node.log("Existing connection found, closing it.");
+                    await node.disconnect();
+                }
+
+                switch (node.dbType) {
+                    case 'postgresql':
+                        const { Pool } = require('pg');
+                        node.connection = new Pool({
+                            host: node.host,
+                            port: node.port,
+                            user: node.user,
+                            password: node.password,
+                            database: node.database,
+                            ssl: { rejectUnauthorized: false } // Consider more robust SSL handling for production
+                        });
+                        await node.connection.query('SELECT NOW()'); // Test connection
+                        node.status({ fill: "green", shape: "dot", text: "connected" });
+                        node.log(`Connected to PostgreSQL database: ${node.database}`);
+                        break;
+                    case 'mysql':
+                        const mysql = require('mysql2/promise');
+                        node.connection = await mysql.createConnection({
+                            host: node.host,
+                            port: node.port,
+                            user: node.user,
+                            password: node.password,
+                            database: node.database
+                        });
+                        node.status({ fill: "green", shape: "dot", text: "connected" });
+                        node.log(`Connected to MySQL database: ${node.database}`);
+                        break;
+                    case 'sqlite':
+                        const sqlite3 = require('sqlite3').verbose();
+                        const { open } = require('sqlite');
+                        node.connection = await open({
+                            filename: node.filename,
+                            driver: sqlite3.Database
+                        });
+                        node.status({ fill: "green", shape: "dot", text: "connected" });
+                        node.log(`Connected to SQLite database: ${node.filename}`);
+                        break;
+                    default:
+                        throw new Error(`Unsupported database type: ${node.dbType}`);
+                }
+            } catch (err) {
+                node.error(`Failed to connect to database: ${err.message}`, err);
+                node.status({ fill: "red", shape: "ring", text: "disconnected" });
+                node.connection = null;
+            }
+        };
+
+        // Function to disconnect from database
+        node.disconnect = async function() {
+            if (node.connection) {
+                try {
+                    if (node.dbType === 'postgresql') {
+                        await node.connection.end();
+                    } else if (node.dbType === 'mysql') {
+                        await node.connection.end();
+                    } else if (node.dbType === 'sqlite') {
+                        await node.connection.close();
+                    }
+                    node.log("Database connection closed.");
+                } catch (err) {
+                    node.error(`Error closing database connection: ${err.message}`, err);
+                } finally {
+                    node.connection = null;
+                }
+            }
+        };
+
+        // Connect on deploy/start
+        node.on('close', function(done) {
+            node.disconnect().then(() => done()).catch(err => {
+                node.error("Error during node close disconnect: " + err.message);
+                done();
+            });
+        });
+
+        // Initial connection attempt
+        node.connect();
+    }
+
+    RED.nodes.registerType("dbconfig", DbConfigNode, {
+        credentials: {
+            password: { type: "password" }
+        }
+    });
+}

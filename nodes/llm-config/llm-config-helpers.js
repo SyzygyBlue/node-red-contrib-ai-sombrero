@@ -200,6 +200,15 @@ async function callLLM(provider, config, credentials, params) {
   }
 }
 
+module.exports = {
+  validateConfig,
+  normalizeConfig,
+  encrypt,
+  decrypt,
+  testConnection,
+  callLLM
+};
+
 /**
  * Calls the OpenAI API
  */

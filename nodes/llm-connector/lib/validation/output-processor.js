@@ -20,9 +20,15 @@ function normalizeLLMOutput(rawOutput, options = {}) {
       throw new LLMError('LLM returned no output', ERROR_CODES.PROCESSING_ERROR);
     }
 
-    // If it's already an object, return a copy
+    // If it's an object, try to extract the content
     if (typeof rawOutput === 'object' && rawOutput !== null) {
-      return { ...rawOutput };
+      if (rawOutput.choices && rawOutput.choices.length > 0 && rawOutput.choices[0].message && rawOutput.choices[0].message.content) {
+        return rawOutput.choices[0].message.content;
+      } else if (rawOutput.text) {
+        return rawOutput.text;
+      } else {
+        return { ...rawOutput }; // Fallback if no specific content field is found
+      }
     }
 
     // If it's a string, try to parse it as JSON

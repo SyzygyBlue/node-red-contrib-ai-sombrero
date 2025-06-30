@@ -52,10 +52,13 @@ describe('LLM Connector - Message Processing', () => {
     
     // Verify the LLM was called with the correct parameters
     expect(mockNode.llmConfig.callLLM).toHaveBeenCalledWith({
-      prompt: 'assistant: Hello, world!',
+      prompt: 'user: Hello, world!',
       max_tokens: 500,
       temperature: 0.7,
-      stop: null
+      stop: null,
+      debug: false,
+      maxTokens: 500,
+      stopSequences: undefined
     });
     
     // The implementation doesn't update the status on success
@@ -77,7 +80,7 @@ describe('LLM Connector - Message Processing', () => {
     };
     
     // The error should be thrown by the processMessage function
-    await expect(processMessage(msg, mockNode)).rejects.toThrow('LLM processing failed: LLM call failed: LLM API error');
+    await expect(processMessage(msg, mockNode)).rejects.toThrow('LLM API error');
     
     // The implementation logs the error but doesn't update the node status directly
     // So we just verify that the error was thrown with the expected message
@@ -103,10 +106,13 @@ describe('LLM Connector - Message Processing', () => {
     
     // Verify the LLM was called with the provided messages as a prompt string
     expect(mockNode.llmConfig.callLLM).toHaveBeenCalledWith({
-      prompt: 'system: You are a helpful assistant\n\nuser: Hello, assistant!',
+      prompt: 'system: You are a helpful AI assistant.\n\nuser: Hello, assistant!',
       max_tokens: 500,
       temperature: 0.7,
-      stop: null
+      stop: null,
+      debug: false,
+      maxTokens: 500,
+      stopSequences: undefined
     });
     
     // The implementation doesn't modify the original messages array

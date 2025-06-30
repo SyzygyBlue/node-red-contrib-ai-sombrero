@@ -1,0 +1,124 @@
+<div class="mcp-outputs-container">
+    <div class="form-row">
+        <label><i class="fa fa-sign-out"></i> Output Configuration</label>
+        <div class="form-tips">Configure the number of outputs and their labels</div>
+    </div>
+    
+    <div class="form-row">
+        <label for="mcp-output-count">Number of Outputs</label>
+        <input type="number" id="mcp-output-count" min="1" max="10" value="2">
+    </div>
+    
+    <div class="form-row">
+        <div class="mcp-outputs-list" id="mcp-outputs-list">
+            <!-- Output labels will be added here dynamically -->
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Outputs editor functionality
+    (function() {
+        let outputLabels = [];
+        
+        // Initialize the outputs editor
+        window.mcpNodeInitOutputs = function() {
+            // Get output labels from node configuration
+            const node = RED.nodes.node(RED.editor.activeNode.id);
+            outputLabels = node.outputLabels || ["Output 1", "Output 2"];
+            
+            // Set output count
+            $("#mcp-output-count").val(outputLabels.length);
+            
+            // Initialize output list
+            updateOutputsList();
+            
+            // Setup event handlers
+            setupEventHandlers();
+        };
+        
+        // Update the outputs list display
+        function updateOutputsList() {
+            const $list = $("#mcp-outputs-list");
+            $list.empty();
+            
+            outputLabels.forEach((label, index) => {
+                const $row = $('<div class="form-row mcp-output-item"></div>');
+                
+                // Output index
+                $row.append(`<label for="output-label-${index}">Output ${index + 1}</label>`);
+                
+                // Output label input
+                const $input = $(`<input type="text" id="output-label-${index}" class="mcp-output-label" value="${label || `Output ${index + 1}`}">`);
+                $input.on('input', function() {
+                    outputLabels[index] = $(this).val();
+                });
+                
+                $row.append($input);
+                $list.append($row);
+            });
+        }
+        
+        // Setup event handlers
+        function setupEventHandlers() {
+            // Output count change
+            $("#mcp-output-count").change(function() {
+                const count = parseInt($(this).val(), 10);
+                
+                // Validate count
+                if (isNaN(count) || count < 1) {
+                    $(this).val(1);
+                    return;
+                }
+                
+                if (count > 10) {
+                    $(this).val(10);
+                    return;
+                }
+                
+                // Adjust output labels array
+                if (count > outputLabels.length) {
+                    // Add new outputs
+                    for (let i = outputLabels.length; i < count; i++) {
+                        outputLabels.push(`Output ${i + 1}`);
+                    }
+                } else if (count < outputLabels.length) {
+                    // Remove outputs
+                    outputLabels = outputLabels.slice(0, count);
+                }
+                
+                // Update UI
+                updateOutputsList();
+            });
+        }
+        
+        // Get the current output labels
+        window.mcpNodeGetOutputs = function() {
+            return outputLabels;
+        };
+    })();
+</script>
+
+<style>
+    .mcp-outputs-container {
+        width: 100%;
+    }
+    
+    .mcp-outputs-list {
+        margin-top: 10px;
+    }
+    
+    .mcp-output-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+    
+    .mcp-output-item label {
+        width: 100px;
+    }
+    
+    .mcp-output-label {
+        flex-grow: 1;
+    }
+</style>

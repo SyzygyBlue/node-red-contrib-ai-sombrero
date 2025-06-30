@@ -6,7 +6,12 @@ module.exports = {
         id: config.id || 'test-node',
         type: config.type,
         name: config.name || '',
-        on: jest.fn(),
+        events: {
+          on: jest.fn(),
+          off: jest.fn(),
+          emit: jest.fn(),
+          removeAllListeners: jest.fn()
+        },
         send: jest.fn(),
         error: jest.fn(),
         warn: jest.fn(),
@@ -30,6 +35,12 @@ module.exports = {
           info: jest.fn(),
           warn: jest.fn(),
           error: jest.fn()
+        },
+        events: {
+          on: jest.fn(),
+          off: jest.fn(),
+          emit: jest.fn(),
+          removeAllListeners: jest.fn()
         },
         httpAdmin: {
           get: jest.fn(),

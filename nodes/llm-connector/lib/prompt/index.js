@@ -3,7 +3,7 @@
  * Exports all prompt-related functionality
  */
 
-const RoleManager = require('./role-manager');
+const { RoleManager } = require('./role-manager');
 const PromptBuilder = require('./prompt-builder');
 const MessageFormatter = require('./message-formatter');
 const {

@@ -8,9 +8,13 @@
 const path = require('path');
 
 // Mock the prompt builder
-jest.mock('../../../nodes/llm-connector/lib/prompt/prompt-builder', () => ({
-  buildPrompt: jest.fn().mockReturnValue('Formatted prompt')
-}));
+jest.mock('../../../nodes/llm-connector/lib/prompt/prompt-builder', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      buildPrompt: jest.fn().mockReturnValue('Formatted prompt')
+    };
+  });
+});
 
 // Mock the output processor
 jest.mock('../../../nodes/llm-connector/lib/validation/output-processor', () => ({

@@ -1,0 +1,197 @@
+<div class="mcp-debug-container">
+    <div class="form-row">
+        <label><i class="fa fa-bug"></i> Debug Configuration</label>
+        <div class="form-tips">Configure debugging and decision logging options</div>
+    </div>
+    
+    <div class="form-row">
+        <input type="checkbox" id="mcp-debug-enable" style="display:inline-block; width:auto; vertical-align:top;">
+        <label for="mcp-debug-enable" style="width:auto">Enable Debug Mode</label>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-tips">
+            When debug mode is enabled:
+            <ul>
+                <li>Decision details are added to <code>msg._debug.mcp</code></li>
+                <li>Rule evaluation details are logged</li>
+                <li>AI prompts and responses are captured</li>
+                <li>Performance metrics are recorded</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <label><i class="fa fa-history"></i> Decision History</label>
+        <div id="mcp-decision-history" class="mcp-history-container">
+            <div class="mcp-history-empty">No decision history available</div>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <a href="#" class="editor-button" id="mcp-refresh-history">
+            <i class="fa fa-refresh"></i> Refresh History
+        </a>
+        <a href="#" class="editor-button" id="mcp-clear-history">
+            <i class="fa fa-trash"></i> Clear History
+        </a>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Debug configuration functionality
+    (function() {
+        // Initialize the debug editor
+        window.mcpNodeInitDebug = function() {
+            // Get debug mode from node configuration
+            const node = RED.nodes.node(RED.editor.activeNode.id);
+            $("#mcp-debug-enable").prop("checked", node.debugMode || false);
+            
+            // Setup event handlers
+            setupEventHandlers();
+            
+            // Load decision history if node has an ID
+            if (node.id) {
+                loadDecisionHistory(node.id);
+            }
+        };
+        
+        // Setup event handlers
+        function setupEventHandlers() {
+            // Debug mode checkbox
+            $("#mcp-debug-enable").change(function() {
+                const checked = $(this).is(":checked");
+                $("#node-input-debugMode").prop("checked", checked);
+            });
+            
+            // Refresh history button
+            $("#mcp-refresh-history").click(function(e) {
+                e.preventDefault();
+                const nodeId = RED.nodes.node(RED.editor.activeNode.id).id;
+                if (nodeId) {
+                    loadDecisionHistory(nodeId);
+                }
+            });
+            
+            // Clear history button
+            $("#mcp-clear-history").click(function(e) {
+                e.preventDefault();
+                const nodeId = RED.nodes.node(RED.editor.activeNode.id).id;
+                if (nodeId && confirm("Are you sure you want to clear the decision history?")) {
+                    clearDecisionHistory(nodeId);
+                }
+            });
+        }
+        
+        // Load decision history from the server
+        function loadDecisionHistory(nodeId) {
+            const $history = $("#mcp-decision-history");
+            $history.html('<div class="mcp-history-loading"><i class="fa fa-spinner fa-spin"></i> Loading history...</div>');
+            
+            $.getJSON(`mcp-node/getdecisionhistory/${nodeId}`, function(data) {
+                if (data && data.history && data.history.length > 0) {
+                    displayDecisionHistory($history, data.history);
+                } else {
+                    $history.html('<div class="mcp-history-empty">No decision history available</div>');
+                }
+            }).fail(function() {
+                $history.html('<div class="mcp-history-error">Failed to load decision history</div>');
+            });
+        }
+        
+        // Display decision history in the UI
+        function displayDecisionHistory($container, history) {
+            $container.empty();
+            
+            const $table = $('<table class="mcp-history-table"></table>');
+            const $header = $('<tr></tr>');
+            $header.append('<th>Time</th>');
+            $header.append('<th>Mode</th>');
+            $header.append('<th>Outputs</th>');
+            $header.append('<th>Duration</th>');
+            $table.append($header);
+            
+            history.forEach(entry => {
+                const $row = $('<tr></tr>');
+                
+                // Format timestamp
+                const time = new Date(entry.timestamp);
+                const timeStr = time.toLocaleTimeString();
+                $row.append(`<td>${timeStr}</td>`);
+                
+                // Mode
+                $row.append(`<td>${entry.mode}</td>`);
+                
+                // Outputs
+                const outputs = entry.outputs.map(o => o.label).join(", ");
+                $row.append(`<td>${outputs}</td>`);
+                
+                // Duration
+                $row.append(`<td>${entry.executionTime}ms</td>`);
+                
+                $table.append($row);
+            });
+            
+            $container.append($table);
+        }
+        
+        // Clear decision history
+        function clearDecisionHistory(nodeId) {
+            $.ajax({
+                url: `mcp-node/cleardecisionhistory/${nodeId}`,
+                type: 'POST',
+                success: function() {
+                    $("#mcp-decision-history").html('<div class="mcp-history-empty">No decision history available</div>');
+                    RED.notify("Decision history cleared", "success");
+                },
+                error: function() {
+                    RED.notify("Failed to clear decision history", "error");
+                }
+            });
+        }
+    })();
+</script>
+
+<style>
+    .mcp-debug-container {
+        width: 100%;
+    }
+    
+    .mcp-history-container {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 10px;
+        min-height: 150px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .mcp-history-empty,
+    .mcp-history-loading,
+    .mcp-history-error {
+        text-align: center;
+        padding: 20px;
+        color: #888;
+    }
+    
+    .mcp-history-error {
+        color: #d9534f;
+    }
+    
+    .mcp-history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .mcp-history-table th,
+    .mcp-history-table td {
+        padding: 5px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+    }
+    
+    .mcp-history-table th {
+        background-color: #f5f5f5;
+    }
+</style>

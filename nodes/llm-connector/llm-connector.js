@@ -33,6 +33,10 @@ module.exports = function (RED) {
 
     // Handle incoming messages
     this.on('input', async (msg, send, done) => {
+      // Fallbacks for Node-RED versions <1.0
+      const _send = send || this.send.bind(this);
+      const _done = typeof done === 'function' ? done : () => {};
+
       try {
         // Validate and normalize the message
         const normalizedMsg = await normalizeMessage(msg, this);
@@ -40,8 +44,8 @@ module.exports = function (RED) {
         // Process the message through the LLM
         const result = await processMessage(normalizedMsg, this);
 
-        // Send the result to the output
-        send([result, null]);
+        // Send the result to the first output
+        _send([result, null]);
 
         // Update status
         this.status({ fill: 'green', shape: 'dot', text: 'Success' });
@@ -51,11 +55,11 @@ module.exports = function (RED) {
           event: 'llm_request_success',
           nodeId: this.id,
           role: this.role,
-          config: this.llmConfig.id,
+          config: this.llmConfig?.id,
           debug: this.debug
         });
 
-        done();
+        _done();
       } catch (error) {
         // Handle errors
         this.status({ fill: 'red', shape: 'ring', text: 'Error' });
@@ -69,9 +73,9 @@ module.exports = function (RED) {
           stack: error.stack
         });
 
-        // Send error to the second output
-        send([null, { ...msg, error: error.message }]);
-        done();
+        // Use this.error for proper Node-RED error handling
+        this.error(error, msg);
+        _done(error);
       }
     });
 

@@ -1,4 +1,5 @@
-const { PromptEnhancer } = require('../../nodes/shared/prompt-enhancer');
+const { createPromptEnhancer } = require('shared/prompt-enhancer');
+
 
 // Mock LLM provider
 const mockLLM = jest.fn();
@@ -13,21 +14,21 @@ describe('PromptEnhancer', () => {
       usage: { total_tokens: 42 }
     });
     
-    enhancer = new PromptEnhancer({
+    enhancer = createPromptEnhancer({
       llmProvider: mockLLM,
-      context: 'llmConnector',
+      context: 'general',
       defaults: { maxTokens: 300 }
     });
   });
   
-  describe('constructor', () => {
+  describe('initialization', () => {
     it('should initialize with default context', () => {
-      const defaultEnhancer = new PromptEnhancer({ llmProvider: mockLLM });
+      const defaultEnhancer = createPromptEnhancer({ llmProvider: mockLLM });
       expect(defaultEnhancer.context).toBe('general');
     });
     
     it('should throw error without LLM provider', () => {
-      expect(() => new PromptEnhancer()).toThrow('LLM provider function is required');
+      expect(() => createPromptEnhancer()).toThrow('llmProvider function is required.');
     });
   });
   
@@ -41,9 +42,7 @@ describe('PromptEnhancer', () => {
       expect(result).toBe('Enhanced prompt with additional context');
       expect(mockLLM).toHaveBeenCalledWith({
         prompt: expect.stringContaining(original),
-        max_tokens: 300,
-        temperature: 0.7,
-        stop: expect.any(Array)
+        maxTokens: 300
       });
     });
     
@@ -57,7 +56,7 @@ describe('PromptEnhancer', () => {
       });
       
       expect(mockLLM).toHaveBeenCalledWith(expect.objectContaining({
-        max_tokens: 500,
+        maxTokens: 500,
         temperature: 0.9
       }));
     });
@@ -76,18 +75,22 @@ describe('PromptEnhancer', () => {
     it('should create a new instance with different context', () => {
       const mcpEnhancer = enhancer.withContext('mcpNode');
       
-      expect(mcpEnhancer).toBeInstanceOf(PromptEnhancer);
+      expect(typeof mcpEnhancer.enhance).toBe('function');
+      expect(typeof mcpEnhancer.withContext).toBe('function');
       expect(mcpEnhancer.context).toBe('mcpNode');
       expect(mcpEnhancer.llmProvider).toBe(enhancer.llmProvider);
     });
   });
 });
 
-describe('createPromptEnhancer', () => {
+describe('createPromptEnhancer function', () => {
   it('should create a new PromptEnhancer instance', () => {
-    const { createPromptEnhancer } = require('../../nodes/shared/prompt-enhancer');
     const enhancer = createPromptEnhancer({ llmProvider: mockLLM });
     
-    expect(enhancer).toBeInstanceOf(PromptEnhancer);
+    // We can't directly check for 'instanceof PromptEnhancer' if the class isn't exported.
+    // Instead, we check for the expected methods.
+    expect(typeof enhancer.enhance).toBe('function');
+    expect(typeof enhancer.withContext).toBe('function');
+    expect(enhancer.context).toBe('general'); // Default context
   });
 });

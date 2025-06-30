@@ -1,0 +1,424 @@
+<div class="mcp-rules-container">
+    <div class="form-row">
+        <label><i class="fa fa-list"></i> Routing Rules</label>
+        <div class="mcp-rules-list" id="mcp-rules-list">
+            <!-- Rules will be added here dynamically -->
+        </div>
+        <div class="form-row">
+            <a href="#" class="editor-button editor-button-small" id="mcp-add-rule">
+                <i class="fa fa-plus"></i> Add Rule
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="mcp-rule-editor" id="mcp-rule-editor" style="display:none;">
+    <div class="form-row">
+        <label for="rule-name">Rule Name</label>
+        <input type="text" id="rule-name" placeholder="Rule name">
+    </div>
+    
+    <div class="form-row">
+        <label for="rule-type">Rule Type</label>
+        <select id="rule-type">
+            <option value="simple">Simple Property</option>
+            <option value="jsonata">JSONata Expression</option>
+            <option value="javascript">JavaScript Function</option>
+        </select>
+    </div>
+    
+    <!-- Simple property fields -->
+    <div class="form-row rule-simple">
+        <label for="rule-property">Property</label>
+        <input type="text" id="rule-property" placeholder="msg.payload">
+    </div>
+    
+    <div class="form-row rule-simple">
+        <label for="rule-operator">Operator</label>
+        <select id="rule-operator">
+            <option value="eq">equals</option>
+            <option value="neq">not equals</option>
+            <option value="lt">less than</option>
+            <option value="lte">less than or equals</option>
+            <option value="gt">greater than</option>
+            <option value="gte">greater than or equals</option>
+            <option value="contains">contains</option>
+            <option value="regex">matches regex</option>
+        </select>
+    </div>
+    
+    <div class="form-row rule-simple">
+        <label for="rule-value">Value</label>
+        <input type="text" id="rule-value" placeholder="Value">
+    </div>
+    
+    <!-- JSONata expression field -->
+    <div class="form-row rule-jsonata">
+        <label for="rule-jsonata">JSONata Expression</label>
+        <div style="height: 150px; min-height: 150px;" class="node-text-editor" id="rule-jsonata-editor"></div>
+    </div>
+    
+    <!-- JavaScript function field -->
+    <div class="form-row rule-javascript">
+        <label for="rule-javascript">JavaScript Function</label>
+        <div style="height: 150px; min-height: 150px;" class="node-text-editor" id="rule-javascript-editor"></div>
+        <div class="form-tips">
+            Function should set <code>result = true</code> to match this rule.
+            The <code>msg</code> object is available in the function scope.
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <label for="rule-output">Output</label>
+        <select id="rule-output">
+            <!-- Output options will be populated dynamically -->
+        </select>
+    </div>
+    
+    <div class="form-row">
+        <label for="rule-priority">Priority</label>
+        <input type="number" id="rule-priority" min="0" max="100" value="0">
+        <div class="form-tips">Higher priority rules take precedence when multiple rules match.</div>
+    </div>
+    
+    <div class="form-row">
+        <label for="rule-disabled">Disabled</label>
+        <input type="checkbox" id="rule-disabled" style="display:inline-block; width:auto; vertical-align:top;">
+    </div>
+    
+    <div class="form-row">
+        <a href="#" class="editor-button" id="rule-save">Save Rule</a>
+        <a href="#" class="editor-button" id="rule-cancel">Cancel</a>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Rules editor functionality
+    (function() {
+        let rules = [];
+        let editingRuleIndex = -1;
+        let jsonataEditor = null;
+        let javascriptEditor = null;
+        
+        // Initialize the rules editor
+        window.mcpNodeInitRules = function() {
+            // Get rules from node configuration
+            rules = RED.nodes.node(RED.editor.activeNode.id).rules || [];
+            
+            // Initialize rule list
+            updateRulesList();
+            
+            // Initialize editors
+            initEditors();
+            
+            // Setup event handlers
+            setupEventHandlers();
+        };
+        
+        // Update the rules list display
+        function updateRulesList() {
+            const $list = $("#mcp-rules-list");
+            $list.empty();
+            
+            if (rules.length === 0) {
+                $list.append('<div class="form-row"><i>No rules defined</i></div>');
+                return;
+            }
+            
+            rules.forEach((rule, index) => {
+                const $row = $('<div class="form-row mcp-rule-item"></div>');
+                
+                // Rule name/description
+                let description = rule.name || `Rule ${index + 1}`;
+                if (rule.disabled) {
+                    description += ' (disabled)';
+                }
+                
+                $row.append(`<span class="mcp-rule-name">${description}</span>`);
+                
+                // Edit button
+                const $edit = $('<a href="#" class="editor-button editor-button-small"><i class="fa fa-pencil"></i></a>');
+                $edit.click(function(e) {
+                    e.preventDefault();
+                    editRule(index);
+                });
+                
+                // Delete button
+                const $delete = $('<a href="#" class="editor-button editor-button-small"><i class="fa fa-trash"></i></a>');
+                $delete.click(function(e) {
+                    e.preventDefault();
+                    deleteRule(index);
+                });
+                
+                const $buttons = $('<span class="mcp-rule-buttons"></span>');
+                $buttons.append($edit).append($delete);
+                $row.append($buttons);
+                
+                $list.append($row);
+            });
+        }
+        
+        // Initialize the code editors
+        function initEditors() {
+            // JSONata editor
+            if (jsonataEditor === null) {
+                jsonataEditor = RED.editor.createEditor({
+                    id: 'rule-jsonata-editor',
+                    mode: 'ace/mode/jsonata',
+                    value: ""
+                });
+            }
+            
+            // JavaScript editor
+            if (javascriptEditor === null) {
+                javascriptEditor = RED.editor.createEditor({
+                    id: 'rule-javascript-editor',
+                    mode: 'ace/mode/javascript',
+                    value: "// Return true to match this rule\n// msg object is available\nresult = msg.payload > 0;"
+                });
+            }
+        }
+        
+        // Setup event handlers
+        function setupEventHandlers() {
+            // Add rule button
+            $("#mcp-add-rule").click(function(e) {
+                e.preventDefault();
+                addNewRule();
+            });
+            
+            // Rule type change
+            $("#rule-type").change(function() {
+                updateRuleTypeFields($(this).val());
+            });
+            
+            // Save rule button
+            $("#rule-save").click(function(e) {
+                e.preventDefault();
+                saveRule();
+            });
+            
+            // Cancel button
+            $("#rule-cancel").click(function(e) {
+                e.preventDefault();
+                hideRuleEditor();
+            });
+        }
+        
+        // Show the appropriate fields for the selected rule type
+        function updateRuleTypeFields(type) {
+            $(".rule-simple, .rule-jsonata, .rule-javascript").hide();
+            
+            if (type === "simple") {
+                $(".rule-simple").show();
+            } else if (type === "jsonata") {
+                $(".rule-jsonata").show();
+                if (jsonataEditor) {
+                    jsonataEditor.resize();
+                }
+            } else if (type === "javascript") {
+                $(".rule-javascript").show();
+                if (javascriptEditor) {
+                    javascriptEditor.resize();
+                }
+            }
+        }
+        
+        // Add a new rule
+        function addNewRule() {
+            editingRuleIndex = -1;
+            
+            // Reset form
+            $("#rule-name").val("");
+            $("#rule-type").val("simple");
+            $("#rule-property").val("payload");
+            $("#rule-operator").val("eq");
+            $("#rule-value").val("");
+            $("#rule-output").val(0);
+            $("#rule-priority").val(0);
+            $("#rule-disabled").prop("checked", false);
+            
+            if (jsonataEditor) {
+                jsonataEditor.setValue("");
+            }
+            
+            if (javascriptEditor) {
+                javascriptEditor.setValue("// Return true to match this rule\n// msg object is available\nresult = msg.payload > 0;");
+            }
+            
+            // Update output options
+            updateOutputOptions();
+            
+            // Show rule editor
+            updateRuleTypeFields("simple");
+            showRuleEditor();
+        }
+        
+        // Edit an existing rule
+        function editRule(index) {
+            if (index < 0 || index >= rules.length) return;
+            
+            editingRuleIndex = index;
+            const rule = rules[index];
+            
+            // Fill form with rule data
+            $("#rule-name").val(rule.name || "");
+            $("#rule-type").val(rule.type || "simple");
+            $("#rule-property").val(rule.property || "payload");
+            $("#rule-operator").val(rule.operator || "eq");
+            $("#rule-value").val(rule.value || "");
+            $("#rule-output").val(rule.output || 0);
+            $("#rule-priority").val(rule.priority || 0);
+            $("#rule-disabled").prop("checked", rule.disabled || false);
+            
+            if (jsonataEditor && rule.type === "jsonata") {
+                jsonataEditor.setValue(rule.expression || "");
+            }
+            
+            if (javascriptEditor && rule.type === "javascript") {
+                javascriptEditor.setValue(rule.function || "// Return true to match this rule\n// msg object is available\nresult = msg.payload > 0;");
+            }
+            
+            // Update output options
+            updateOutputOptions();
+            
+            // Show rule editor
+            updateRuleTypeFields(rule.type || "simple");
+            showRuleEditor();
+        }
+        
+        // Delete a rule
+        function deleteRule(index) {
+            if (index < 0 || index >= rules.length) return;
+            
+            if (confirm("Are you sure you want to delete this rule?")) {
+                rules.splice(index, 1);
+                updateRulesList();
+            }
+        }
+        
+        // Save the current rule
+        function saveRule() {
+            const rule = {
+                name: $("#rule-name").val(),
+                type: $("#rule-type").val(),
+                output: parseInt($("#rule-output").val(), 10),
+                priority: parseInt($("#rule-priority").val(), 10),
+                disabled: $("#rule-disabled").is(":checked")
+            };
+            
+            // Add type-specific properties
+            if (rule.type === "simple") {
+                rule.property = $("#rule-property").val();
+                rule.operator = $("#rule-operator").val();
+                rule.value = $("#rule-value").val();
+            } else if (rule.type === "jsonata") {
+                rule.expression = jsonataEditor.getValue();
+            } else if (rule.type === "javascript") {
+                rule.function = javascriptEditor.getValue();
+            }
+            
+            // Add or update rule
+            if (editingRuleIndex === -1) {
+                rules.push(rule);
+            } else {
+                rules[editingRuleIndex] = rule;
+            }
+            
+            // Update UI
+            updateRulesList();
+            hideRuleEditor();
+        }
+        
+        // Show the rule editor
+        function showRuleEditor() {
+            $("#mcp-rules-list").hide();
+            $("#mcp-add-rule").hide();
+            $("#mcp-rule-editor").show();
+            
+            // Resize editors
+            if (jsonataEditor) {
+                jsonataEditor.resize();
+            }
+            
+            if (javascriptEditor) {
+                javascriptEditor.resize();
+            }
+        }
+        
+        // Hide the rule editor
+        function hideRuleEditor() {
+            $("#mcp-rule-editor").hide();
+            $("#mcp-rules-list").show();
+            $("#mcp-add-rule").show();
+        }
+        
+        // Update output options based on node configuration
+        function updateOutputOptions() {
+            const $select = $("#rule-output");
+            $select.empty();
+            
+            const node = RED.nodes.node(RED.editor.activeNode.id);
+            const outputLabels = node.outputLabels || ["Output 1", "Output 2"];
+            
+            outputLabels.forEach((label, index) => {
+                $select.append(`<option value="${index}">${label}</option>`);
+            });
+        }
+        
+        // Get the current rules
+        window.mcpNodeGetRules = function() {
+            return rules;
+        };
+        
+        // Resize handler
+        window.mcpNodeResizeRules = function() {
+            if (jsonataEditor) {
+                jsonataEditor.resize();
+            }
+            
+            if (javascriptEditor) {
+                javascriptEditor.resize();
+            }
+        };
+    })();
+</script>
+
+<style>
+    .mcp-rules-container {
+        width: 100%;
+    }
+    
+    .mcp-rules-list {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 10px;
+        min-height: 100px;
+    }
+    
+    .mcp-rule-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .mcp-rule-item:last-child {
+        border-bottom: none;
+    }
+    
+    .mcp-rule-name {
+        flex-grow: 1;
+    }
+    
+    .mcp-rule-buttons {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .mcp-rule-editor {
+        width: 100%;
+    }
+</style>

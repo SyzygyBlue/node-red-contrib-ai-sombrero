@@ -1,0 +1,166 @@
+<div class="mcp-ai-container">
+    <div class="form-row">
+        <label><i class="fa fa-brain"></i> AI Routing Configuration</label>
+        <div class="form-tips">Configure how AI makes routing decisions</div>
+    </div>
+    
+    <div class="form-row">
+        <label for="mcp-ai-prompt">Prompt Template</label>
+        <div class="node-text-editor" id="mcp-ai-prompt-editor" style="height: 200px; min-height: 200px;"></div>
+        <div class="form-tips">
+            Available variables:
+            <ul>
+                <li><code>{{outputs}}</code> - List of available outputs</li>
+                <li><code>{{message}}</code> - The message content</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <a href="#" class="editor-button" id="mcp-enhance-prompt">
+            <i class="fa fa-magic"></i> Enhance Prompt
+        </a>
+        <a href="#" class="editor-button" id="mcp-reset-prompt">
+            <i class="fa fa-undo"></i> Reset to Default
+        </a>
+    </div>
+    
+    <div class="form-row">
+        <label for="mcp-ai-temperature">Temperature</label>
+        <input type="range" id="mcp-ai-temperature" min="0" max="10" value="3" style="width: 60%;">
+        <span id="mcp-ai-temperature-value">0.3</span>
+        <div class="form-tips">Lower values make decisions more consistent, higher values more creative</div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // AI routing editor functionality
+    (function() {
+        let aiPromptEditor = null;
+        const defaultPrompt = `You are a message router that decides where to send incoming messages.
+        
+Available outputs:
+{{outputs}}
+
+Message content:
+{{message}}
+
+Your task is to analyze the message and decide which output(s) it should be sent to.
+Respond with a JSON object that contains an "outputs" array with the indices of the selected outputs.
+Example: { "outputs": [0, 2] }`;
+        
+        // Initialize the AI routing editor
+        window.mcpNodeInitAI = function() {
+            // Get AI prompt from node configuration
+            const node = RED.nodes.node(RED.editor.activeNode.id);
+            const aiPrompt = node.aiPromptTemplate || defaultPrompt;
+            
+            // Initialize prompt editor
+            initPromptEditor(aiPrompt);
+            
+            // Setup event handlers
+            setupEventHandlers();
+        };
+        
+        // Initialize the prompt editor
+        function initPromptEditor(value) {
+            if (aiPromptEditor === null) {
+                aiPromptEditor = RED.editor.createEditor({
+                    id: 'mcp-ai-prompt-editor',
+                    mode: 'ace/mode/text',
+                    value: value
+                });
+            } else {
+                aiPromptEditor.setValue(value);
+            }
+        }
+        
+        // Setup event handlers
+        function setupEventHandlers() {
+            // Temperature slider
+            $("#mcp-ai-temperature").on('input', function() {
+                const value = $(this).val() / 10;
+                $("#mcp-ai-temperature-value").text(value.toFixed(1));
+            });
+            
+            // Enhance prompt button
+            $("#mcp-enhance-prompt").click(function(e) {
+                e.preventDefault();
+                enhancePrompt();
+            });
+            
+            // Reset prompt button
+            $("#mcp-reset-prompt").click(function(e) {
+                e.preventDefault();
+                if (confirm("Reset to default prompt template?")) {
+                    aiPromptEditor.setValue(defaultPrompt);
+                }
+            });
+        }
+        
+        // Enhance the prompt using the prompt enhancer
+        function enhancePrompt() {
+            const currentPrompt = aiPromptEditor.getValue();
+            
+            // Get the LLM config node
+            const llmConfigId = $("#node-input-llmConfig").val();
+            if (!llmConfigId) {
+                RED.notify("Please select an LLM Config node first", "error");
+                return;
+            }
+            
+            // Show loading indicator
+            const $enhanceButton = $("#mcp-enhance-prompt");
+            const originalText = $enhanceButton.html();
+            $enhanceButton.html('<i class="fa fa-spinner fa-spin"></i> Enhancing...');
+            $enhanceButton.prop('disabled', true);
+            
+            // Call the prompt enhancer service
+            $.ajax({
+                url: 'prompt-enhancer/enhance',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    prompt: currentPrompt,
+                    instructions: "Optimize this routing prompt for clarity and precision",
+                    context: "mcpNode",
+                    llmConfigId: llmConfigId
+                }),
+                success: function(response) {
+                    if (response && response.enhancedPrompt) {
+                        aiPromptEditor.setValue(response.enhancedPrompt);
+                        RED.notify("Prompt enhanced successfully", "success");
+                    } else {
+                        RED.notify("Failed to enhance prompt", "error");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    RED.notify("Error enhancing prompt: " + error, "error");
+                },
+                complete: function() {
+                    // Restore button
+                    $enhanceButton.html(originalText);
+                    $enhanceButton.prop('disabled', false);
+                }
+            });
+        }
+        
+        // Get the current AI prompt
+        window.mcpNodeGetAIPrompt = function() {
+            return aiPromptEditor ? aiPromptEditor.getValue() : "";
+        };
+        
+        // Resize handler
+        window.mcpNodeResizeAI = function() {
+            if (aiPromptEditor) {
+                aiPromptEditor.resize();
+            }
+        };
+    })();
+</script>
+
+<style>
+    .mcp-ai-container {
+        width: 100%;
+    }
+</style>

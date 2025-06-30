@@ -16,7 +16,9 @@ const {
   defaultPromptBuilder
 } = require('./prompt');
 const { createLLMClient } = require('./integration');
-const { createDebugContext } = require('./utils');
+const { createDebugLogger, createDebugContext } = require('./utils');
+const { LLMError, ERROR_CODES } = require('./validation/error-types');
+const { handleLLMError, createError } = require('./utils/error-handler');
 
 /**
  * Validates the message structure and content
@@ -142,6 +144,7 @@ async function processMessage(msg, node) {
 module.exports = {
   // Core message processing
   validateMessage,
+  normalizeMessage,
   processMessage,
   
   // Prompt building and management
@@ -161,6 +164,15 @@ module.exports = {
   // LLM client
   createLLMClient,
   
+  // Error handling
+  handleLLMError,
+  createError,
+
   // Debug utilities
-  createDebugContext
+  createDebugLogger,
+  createDebugContext,
+
+  // Error types
+  LLMError,
+  ERROR_CODES
 };

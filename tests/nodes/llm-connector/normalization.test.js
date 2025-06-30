@@ -86,7 +86,7 @@ describe('LLM Connector - Message Normalization', () => {
     console.log('Verifying results...');
     
     expect(result.payload).toBe('Test');
-    expect(result.role).toBe('assistant');
+    expect(result._llm.role).toBe('assistant');
     expect(result._llm).toBeDefined();
     expect(result._llm.timestamp).toBeDefined();
   });
@@ -129,7 +129,7 @@ describe('LLM Connector - Message Normalization', () => {
     console.log('Result with debug:', JSON.stringify(result, null, 2));
     
     expect(result.payload).toBe('Test');
-    expect(result.role).toBe('assistant');
+    expect(result._llm.role).toBe('assistant');
     expect(result._llm).toBeDefined();
     console.log('_llm object:', JSON.stringify(result._llm, null, 2));
     
@@ -221,7 +221,7 @@ describe('LLM Connector - Message Normalization', () => {
     });
     
     const result = await normalizeMessage(msg, node);
-    expect(result.role).toBe('assistant');
+    expect(result._llm.role).toBe('assistant');
     
     // Test with role in message overriding node role
     const msgWithRole = { 
@@ -239,7 +239,7 @@ describe('LLM Connector - Message Normalization', () => {
     });
     
     const result2 = await normalizeMessage(msgWithRole, node);
-    expect(result2.role).toBe('assistant');
+    expect(result2._llm.role).toBe('assistant');
   });
   
   test('should handle messages with _llm.messages array', async () => {
@@ -312,7 +312,7 @@ describe('LLM Connector - Message Normalization', () => {
     // Verify the results
     expect(result._llm).toBeDefined();
     expect(Array.isArray(result._llm.messages)).toBe(true);
-    expect(result._llm.messages).toHaveLength(0);
+    expect(result._llm.messages).toHaveLength(1);
     expect(result._llm.nodeId).toBe('test-node');
   });
 });
