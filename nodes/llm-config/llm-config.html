@@ -1,133 +1,143 @@
 <script type="text/javascript">
-  'use strict';
-
-  // Load provider configurations
-  $.getJSON('llm-providers')
-    .done(function(providers) {
-      RED.settings.set('llmProviders', providers);
-    })
-    .fail(function() {
-      console.error('Failed to load LLM providers');
-    });
-
-  // Main node definition
-  RED.nodes.registerType('llm-config', {
-    category: 'config',
-    icon: "font-awesome/fa-hat-cowboy",
-    defaults: {
-      name: { value: '' },
-      provider: { value: '', required: true },
-      // Dynamic fields will be added based on provider
-    },
-    credentials: {
-      // Will be populated dynamically based on provider
-    },
-    label: function() {
-      return this.name || 'LLM Config';
-    },
-    oneditprepare: function() {
-      const node = this;
-      const providerSelect = $('#node-config-input-provider');
-      const configContainer = $('#node-config-credentials');
-      const providers = RED.settings.get('llmProviders') || [];
-
-      // Populate provider dropdown
-      providers.forEach(provider => {
-        providerSelect.append($('<option>', {
-          value: provider.id,
-          text: provider.name
-        }));
-      });
-
-      // Handle provider change
-      function updateConfigUI(providerId) {
-        const provider = providers.find(p => p.id === providerId);
-        if (!provider) return;
-
-        // Clear existing fields
-        configContainer.empty();
-
-        // Add provider-specific fields
-        if (provider.fields) {
-          provider.fields.forEach(field => {
-            const fieldId = `node-config-${field.name}`;
-            const row = $('<div>', { class: 'form-row' });
+    RED.nodes.registerType('llm-config', {
+        category: 'config',
+        icon: "font-awesome/fa-hat-cowboy",
+        defaults: {
+            name: { value: "" },
+            provider: { value: "openai" },
+            model: { value: "" },
+            baseUrl: { value: "" },
+            version: { value: "" },
+            options: { value: {} }
+        },
+        credentials: {
+            apiKey: { type: "password" }
+        },
+        label: function() {
+            return this.name || "LLM Config";
+        },
+        oneditprepare: function() {
+            // Provider selection change handler
+            $("#node-config-input-provider").on("change", function() {
+                const provider = $(this).val();
+                // Hide all provider-specific sections first
+                $(".provider-specific").hide();
+                // Show the selected provider section
+                $("#" + provider + "-config").show();
+                
+                // Update model dropdown based on provider
+                updateModelOptions(provider);
+            });
             
-            row.append($('<label>', {
-              for: fieldId,
-              text: field.label
-            }));
-
-            if (field.type === 'password') {
-              const input = $('<input>', {
-                type: 'password',
-                id: fieldId,
-                style: 'width: 70%',
-                'data-credential': field.credential || false
-              });
-              row.append(input);
-            } else {
-              const input = $('<input>', {
-                type: 'text',
-                id: fieldId,
-                style: 'width: 70%'
-              });
-              row.append(input);
+            // Initialize provider sections
+            $("#node-config-input-provider").trigger("change");
+            
+            function updateModelOptions(provider) {
+                const modelSelect = $("#node-config-input-model");
+                modelSelect.empty();
+                
+                // Add provider-specific model options
+                switch(provider) {
+                    case "openai":
+                        modelSelect.append(new Option("gpt-4o", "gpt-4o"));
+                        modelSelect.append(new Option("gpt-4-turbo", "gpt-4-turbo"));
+                        modelSelect.append(new Option("gpt-4", "gpt-4"));
+                        modelSelect.append(new Option("gpt-3.5-turbo", "gpt-3.5-turbo"));
+                        break;
+                    case "anthropic":
+                        modelSelect.append(new Option("claude-3-opus", "claude-3-opus"));
+                        modelSelect.append(new Option("claude-3-sonnet", "claude-3-sonnet"));
+                        modelSelect.append(new Option("claude-3-haiku", "claude-3-haiku"));
+                        break;
+                    case "google":
+                        modelSelect.append(new Option("gemini-1.5-pro", "gemini-1.5-pro"));
+                        modelSelect.append(new Option("gemini-1.5-flash", "gemini-1.5-flash"));
+                        modelSelect.append(new Option("gemini-1.0-pro", "gemini-1.0-pro"));
+                        break;
+                    case "azure":
+                        modelSelect.append(new Option("gpt-4", "gpt-4"));
+                        modelSelect.append(new Option("gpt-35-turbo", "gpt-35-turbo"));
+                        break;
+                    case "deepseek":
+                        modelSelect.append(new Option("deepseek-chat", "deepseek-chat"));
+                        modelSelect.append(new Option("deepseek-coder", "deepseek-coder"));
+                        break;
+                    case "xai":
+                        modelSelect.append(new Option("grok-1", "grok-1"));
+                        break;
+                }
             }
-
-            configContainer.append(row);
-          });
-        }
-
-        // Add test connection button
-        const testBtn = $('<button>', {
-          class: 'editor-button',
-          style: 'margin-top: 10px;',
-          text: 'Test Connection'
-        }).click(function() {
-          // Implement test connection logic
-          alert('Test connection would be implemented here');
-        });
-        
-        configContainer.append(testBtn);
-      }
-
-      // Initial UI update
-      providerSelect.on('change', function() {
-        updateConfigUI($(this).val());
-      });
-
-      if (node.provider) {
-        providerSelect.val(node.provider);
-        updateConfigUI(node.provider);
-      }
-    },
-    oneditsave: function() {
-      // Handle save logic
-      return true;
-    }
-  });
+        },
+        oneditsave: function() {}
+    });
 </script>
 
-<!-- Node configuration panel -->
 <script type="text/x-red" data-template-name="llm-config">
-  <div class="form-row">
-    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-config-input-name" placeholder="Name">
-  </div>
-  <div class="form-row">
-    <label for="node-config-input-provider"><i class="fa fa-plug"></i> Provider</label>
-    <select id="node-config-input-provider" style="width: 70%;">
-      <option value="">-- Select Provider --</option>
-    </select>
-  </div>
-  <div id="node-config-credentials">
-    <!-- Dynamic fields will be inserted here -->
-  </div>
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-config-input-provider"><i class="fa fa-server"></i> Provider</label>
+        <select id="node-config-input-provider">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="google">Google</option>
+            <option value="azure">Azure OpenAI</option>
+            <option value="deepseek">Deepseek</option>
+            <option value="xai">xAI</option>
+        </select>
+    </div>
+    
+    <div class="form-row">
+        <label for="node-config-input-model"><i class="fa fa-cube"></i> Model</label>
+        <select id="node-config-input-model"></select>
+    </div>
+    
+    <div class="form-row">
+        <label for="node-config-input-apiKey"><i class="fa fa-key"></i> API Key</label>
+        <input type="password" id="node-config-input-apiKey">
+    </div>
+    
+    <!-- Provider-specific configurations -->
+    <div id="openai-config" class="provider-specific">
+        <div class="form-row">
+            <label for="node-config-input-baseUrl"><i class="fa fa-link"></i> Base URL</label>
+            <input type="text" id="node-config-input-baseUrl" placeholder="https://api.openai.com/v1">
+        </div>
+    </div>
+    
+    <div id="azure-config" class="provider-specific">
+        <div class="form-row">
+            <label for="node-config-input-baseUrl"><i class="fa fa-link"></i> Endpoint</label>
+            <input type="text" id="node-config-input-baseUrl" placeholder="https://your-resource.openai.azure.com">
+        </div>
+        <div class="form-row">
+            <label for="node-config-input-version"><i class="fa fa-code-branch"></i> API Version</label>
+            <input type="text" id="node-config-input-version" placeholder="2023-05-15">
+        </div>
+    </div>
 </script>
 
-<!-- Node help text -->
 <script type="text/x-red" data-help-name="llm-config">
-  <p>Configure LLM provider settings and credentials.</p>
-  <p>Select a provider and fill in the required connection details.</p>
+    <p>LLM Configuration node for connecting to various LLM providers.</p>
+    <h3>Details</h3>
+    <p>This configuration node stores the connection details for various LLM providers:</p>
+    <ul>
+        <li><b>OpenAI</b> - Connect to OpenAI's API with models like GPT-4o, GPT-4, and GPT-3.5</li>
+        <li><b>Anthropic</b> - Connect to Anthropic's Claude models</li>
+        <li><b>Google</b> - Connect to Google's Gemini models</li>
+        <li><b>Azure OpenAI</b> - Connect to Azure-hosted OpenAI models</li>
+        <li><b>Deepseek</b> - Connect to Deepseek's AI models</li>
+        <li><b>xAI</b> - Connect to xAI's Grok models</li>
+    </ul>
+    <h3>Configuration</h3>
+    <ul>
+        <li><b>Name</b> - A name for this configuration</li>
+        <li><b>Provider</b> - The LLM provider to use</li>
+        <li><b>Model</b> - The specific model to use</li>
+        <li><b>API Key</b> - Your API key for the selected provider</li>
+        <li><b>Base URL</b> - Optional custom endpoint URL</li>
+    </ul>
 </script>

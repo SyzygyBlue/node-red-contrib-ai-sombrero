@@ -21,27 +21,39 @@ function validateConfig(config, credentials) {
     throw new Error('Provider is required');
   }
 
+  // Common validation
+  if (!credentials || !credentials.apiKey) {
+    throw new Error('API Key is required');
+  }
+
+  if (!config.model) {
+    throw new Error('Model is required');
+  }
+
   // Provider-specific validation
   switch (config.provider) {
     case 'openai':
-      if (!credentials.apiKey) {
-        throw new Error('API Key is required for OpenAI');
-      }
+      // OpenAI validation is handled by common validation
       break;
     case 'anthropic':
-      if (!credentials.apiKey) {
-        throw new Error('API Key is required for Anthropic');
-      }
+      // Anthropic validation is handled by common validation
+      break;
+    case 'google':
+      // Google validation is handled by common validation
       break;
     case 'azure':
-      if (!credentials.apiKey || !config.endpoint) {
-        throw new Error('API Key and Endpoint are required for Azure OpenAI');
+      if (!config.baseUrl) {
+        throw new Error('Endpoint is required for Azure OpenAI');
+      }
+      if (!config.version) {
+        throw new Error('API Version is required for Azure OpenAI');
       }
       break;
-    case 'custom':
-      if (!config.endpoint) {
-        throw new Error('Endpoint is required for custom provider');
-      }
+    case 'deepseek':
+      // Deepseek validation is handled by common validation
+      break;
+    case 'xai':
+      // xAI validation is handled by common validation
       break;
     default:
       throw new Error(`Unsupported provider: ${config.provider}`);
@@ -57,12 +69,30 @@ function normalizeConfig(config) {
   const normalized = { ...config };
   
   // Ensure required fields exist
-  normalized.provider = normalized.provider || '';
+  normalized.provider = normalized.provider || 'openai';
   normalized.name = normalized.name || `LLM Config (${normalized.provider})`;
+  normalized.model = normalized.model || '';
+  normalized.options = normalized.options || {};
   
-  // Normalize endpoint URLs
-  if (normalized.endpoint) {
-    normalized.endpoint = normalized.endpoint.replace(/\/$/, '');
+  // Provider-specific normalization
+  switch (normalized.provider) {
+    case 'openai':
+      normalized.baseUrl = normalized.baseUrl || 'https://api.openai.com/v1';
+      break;
+    case 'azure':
+      normalized.version = normalized.version || '2023-05-15';
+      break;
+    case 'anthropic':
+      normalized.baseUrl = normalized.baseUrl || 'https://api.anthropic.com';
+      break;
+    case 'google':
+      normalized.baseUrl = normalized.baseUrl || 'https://generativelanguage.googleapis.com';
+      break;
+  }
+  
+  // Normalize URLs by removing trailing slashes
+  if (normalized.baseUrl) {
+    normalized.baseUrl = normalized.baseUrl.replace(/\/$/, '');
   }
   
   return normalized;

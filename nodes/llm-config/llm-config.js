@@ -17,8 +17,25 @@ module.exports = function (RED) {
     
     // Store configuration
     this.name = config.name || 'LLM Config';
-    this.provider = config.provider || '';
-    this.config = normalizeConfig(config);
+    this.provider = config.provider || 'openai';
+    this.model = config.model || '';
+    this.baseUrl = config.baseUrl || '';
+    this.version = config.version || '';
+    this.options = config.options || {};
+    
+    // Set provider-specific defaults
+    if (this.provider === 'openai' && !this.baseUrl) {
+      this.baseUrl = 'https://api.openai.com/v1';
+    }
+    
+    // Normalize and validate configuration
+    this.config = normalizeConfig({
+      provider: this.provider,
+      model: this.model,
+      baseUrl: this.baseUrl,
+      version: this.version,
+      options: this.options
+    });
 
     // Validate configuration
     try {
@@ -99,9 +116,9 @@ module.exports = function (RED) {
     }
   };
 
-  // Register the node
+  // Register the node with credentials
   RED.nodes.registerType('llm-config', LLMConfigNode, {
-    category: 'config', // Add this line
+    category: 'config',
     credentials: {
       apiKey: { type: 'password' },
       apiSecret: { type: 'password' },
