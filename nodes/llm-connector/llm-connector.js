@@ -7,6 +7,7 @@ module.exports = function (RED) {
   const { auditLogger } = require('../../services/audit-service');
   const { validateMessage, normalizeMessage, processMessage } = require('./llm-connector-helpers');
   const roleHelper = require('./llm-connector-role-based-helper');
+  const roleApi = require('./role-api')(RED);
 
   function LLMConnectorNode(config) {
     RED.nodes.createNode(this, config);
@@ -14,6 +15,9 @@ module.exports = function (RED) {
     // Get configuration
     this.name = config.name || 'LLM Connector';
     this.llmConfig = RED.nodes.getNode(config.llmConfig);
+    this.dbConfig = RED.nodes.getNode(config.dbConfig);
+    this.roleIdentity = config.roleIdentity || '';
+    this.roleIdentityDisplay = config.roleIdentityDisplay || '';
     this.role = config.role || 'assistant';
     this.debug = config.debug === true;
     this.options = config.options || {};
@@ -179,6 +183,9 @@ module.exports = function (RED) {
 
   // Register the node
   RED.nodes.registerType('llm-connector', LLMConnectorNode);
+  
+  // Initialize the role API
+  roleApi.initRoleApi();
 
   // Add dynamic configuration options
   RED.httpAdmin.get('/llm-roles', RED.auth.needsPermission('llm-connector.read'), (req, res) => {

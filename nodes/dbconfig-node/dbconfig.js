@@ -35,7 +35,9 @@ module.exports = function(RED) {
                             user: node.user,
                             password: node.password,
                             database: node.database,
-                            ssl: { rejectUnauthorized: false } // Consider more robust SSL handling for production
+                            // Make SSL optional to support both local and remote connections
+                            ssl: node.host !== 'localhost' && node.host !== '127.0.0.1' ? 
+                                { rejectUnauthorized: false } : false
                         });
                         await node.connection.query('SELECT NOW()'); // Test connection
                         node.status({ fill: "green", shape: "dot", text: "connected" });
@@ -103,6 +105,17 @@ module.exports = function(RED) {
 
         // Initial connection attempt
         node.connect();
+        
+        // Method to get a client for database operations
+        node.getClient = async function() {
+            if (!node.connection) {
+                await node.connect();
+            }
+            if (!node.connection) {
+                throw new Error('Could not establish database connection');
+            }
+            return node.connection;
+        };
     }
 
     RED.nodes.registerType("dbconfig", DbConfigNode, {

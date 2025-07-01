@@ -9,7 +9,15 @@
   </div>
   <div class="form-row">
     <label for="node-input-dbConfig"><i class="fa fa-database"></i> Database Config</label>
-    <input type="text" id="node-input-dbConfig" class="red-ui-typedInput-config">
+    <input type="text" id="node-input-dbConfig" placeholder="Select Database Configuration">
+  </div>
+  <div class="form-row">
+    <label for="node-input-roleIdentity"><i class="fa fa-user-circle"></i> Role Identity</label>
+    <div style="display: flex; width: 70%;">
+      <input type="text" id="node-input-roleIdentityDisplay" style="width: 100%;" readonly placeholder="Select a role identity...">
+      <button id="node-input-select-role" class="red-ui-button" style="margin-left: 10px;"><i class="fa fa-search"></i></button>
+    </div>
+    <input type="hidden" id="node-input-roleIdentity">
   </div>
 </script>
 
@@ -20,7 +28,9 @@
     defaults: {
       name: { value: "" },
       llmConfig: { value: "", type: "llm-config", required: true },
-      dbConfig: { value: "", type: "dbconfig", required: false }
+      dbConfig: { value: "", type: "dbconfig", required: false },
+      roleIdentity: { value: "" },
+      roleIdentityDisplay: { value: "" }
     },
     inputs: 1,
     outputs: 1,
@@ -29,6 +39,8 @@
       return this.name || "LLM Connector";
     },
     oneditprepare: function() {
+      const node = this;
+      
       // Initialize LLM Config dropdown
       RED.nodes.config.init({
         id: 'node-input-llmConfig',
@@ -42,8 +54,278 @@
         type: 'dbconfig',
         required: false
       });
+      
+      // Initialize Role Identity field
+      if (node.roleIdentity && node.roleIdentityDisplay) {
+        $('#node-input-roleIdentityDisplay').val(node.roleIdentityDisplay);
+        $('#node-input-roleIdentity').val(node.roleIdentity);
+      }
+      
+      // Create Role Editor Dialog
+      const roleDialog = $('<div id="role-editor-dialog" class="hide">' +
+        '<div class="form-row">' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:10px;">' +
+            '<h3><i class="fa fa-user-circle"></i> Role Identity Manager</h3>' +
+            '<button id="role-add-new" class="red-ui-button"><i class="fa fa-plus"></i> Add New Role</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-row">' +
+          '<div id="role-list" style="height:200px; overflow-y:auto; border:1px solid #ddd; margin-bottom:10px;">' +
+            '<div style="padding:10px; text-align:center; color:#999;">Loading roles...</div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="role-editor" class="hide">' +
+          '<div class="form-row">' +
+            '<label for="role-name"><i class="fa fa-tag"></i> Role Name</label>' +
+            '<input type="text" id="role-name" style="width:100%">' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<label for="role-description"><i class="fa fa-file-text"></i> Role Description</label>' +
+            '<textarea id="role-description" style="width:100%; height:150px; resize:vertical;"></textarea>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<button id="role-enhance-btn" class="red-ui-button" disabled>' +
+              '<i class="fa fa-magic"></i> Enhance Role' +
+            '</button>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<button id="role-save" class="red-ui-button primary">' +
+              '<i class="fa fa-save"></i> Save Role' +
+            '</button>' +
+            '<button id="role-cancel" class="red-ui-button" style="margin-left:10px;">' +
+              '<i class="fa fa-times"></i> Cancel' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>');
+      
+      // Append dialog to editor
+      roleDialog.appendTo('body');
+      
+      // Role selection button handler
+      $('#node-input-select-role').on('click', function() {
+        // Show the role selection dialog
+        loadRoles();
+        $('#role-editor').hide();
+        $('#role-list').show();
+        $('#role-editor-dialog').dialog({
+          modal: true,
+          width: 600,
+          height: 500,
+          title: 'Select Role Identity',
+          buttons: [
+            {
+              text: "Cancel",
+              click: function() {
+                $(this).dialog('close');
+              }
+            }
+          ]
+        });
+      });
+      
+      // Add new role button handler
+      $('#role-add-new').on('click', function() {
+        showRoleEditor();
+      });
+      
+      // Role save button handler
+      $('#role-save').on('click', function() {
+        saveRole();
+      });
+      
+      // Role cancel button handler
+      $('#role-cancel').on('click', function() {
+        $('#role-editor').hide();
+        $('#role-list').show();
+      });
+      
+      // Role enhance button handler
+      $('#role-enhance-btn').on('click', function() {
+        enhanceRole();
+      });
+      
+      // Enable/disable enhance button based on inputs
+      $('#role-name, #role-description').on('input', function() {
+        const name = $('#role-name').val().trim();
+        const description = $('#role-description').val().trim();
+        $('#role-enhance-btn').prop('disabled', !name || (!name && !description));
+      });
+      
+      // Function to load roles from database
+      function loadRoles() {
+        const dbConfigNode = $('#node-input-dbConfig').val();
+        if (!dbConfigNode) {
+          $('#role-list').html('<div style="padding:10px; text-align:center; color:#999;">Please select a Database Config first</div>');
+          return;
+        }
+        
+        // Fetch roles from the database
+        $.getJSON('ai-sombrero/roles', { dbConfig: dbConfigNode })
+          .done(function(roles) {
+            if (roles && roles.length > 0) {
+              let html = '<ul class="role-items" style="list-style-type:none; padding:0; margin:0;">';
+              roles.forEach(function(role) {
+                html += '<li class="role-item" data-id="' + role.id + '" style="padding:8px; border-bottom:1px solid #eee; cursor:pointer;">' +
+                  '<div><strong>' + role.name + '</strong></div>' +
+                  '<div style="color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + 
+                    (role.description ? role.description.substring(0, 50) + '...' : 'No description') + 
+                  '</div>' +
+                '</li>';
+              });
+              html += '</ul>';
+              $('#role-list').html(html);
+              
+              // Role item click handler
+              $('.role-item').on('click', function() {
+                const roleId = $(this).data('id');
+                const roleName = $(this).find('strong').text();
+                
+                // Set the selected role
+                $('#node-input-roleIdentity').val(roleId);
+                $('#node-input-roleIdentityDisplay').val(roleName);
+                
+                // Close the dialog
+                $('#role-editor-dialog').dialog('close');
+              });
+            } else {
+              $('#role-list').html('<div style="padding:10px; text-align:center; color:#999;">No roles found. Create a new role.</div>');
+            }
+          })
+          .fail(function(err) {
+            $('#role-list').html('<div style="padding:10px; text-align:center; color:#999;">Error loading roles: ' + err.statusText + '</div>');
+          });
+      }
+      
+      // Function to show role editor
+      function showRoleEditor(role) {
+        $('#role-list').hide();
+        $('#role-editor').show();
+        
+        if (role) {
+          $('#role-name').val(role.name);
+          $('#role-description').val(role.description);
+          $('#role-editor').data('role-id', role.id);
+        } else {
+          $('#role-name').val('');
+          $('#role-description').val('');
+          $('#role-editor').removeData('role-id');
+        }
+        
+        // Update enhance button state
+        const name = $('#role-name').val().trim();
+        const description = $('#role-description').val().trim();
+        $('#role-enhance-btn').prop('disabled', !name || (!name && !description));
+      }
+      
+      // Function to save role
+      function saveRole() {
+        const dbConfigNode = $('#node-input-dbConfig').val();
+        if (!dbConfigNode) {
+          RED.notify('Please select a Database Config first', 'error');
+          return;
+        }
+        
+        const roleId = $('#role-editor').data('role-id');
+        const roleName = $('#role-name').val().trim();
+        const roleDescription = $('#role-description').val().trim();
+        
+        if (!roleName) {
+          RED.notify('Role name is required', 'error');
+          return;
+        }
+        
+        const role = {
+          id: roleId,
+          name: roleName,
+          description: roleDescription
+        };
+        
+        // Save role to database
+        $.ajax({
+          url: 'ai-sombrero/roles',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ role: role, dbConfig: dbConfigNode }),
+          success: function(response) {
+            if (response && response.id) {
+              // Set the selected role
+              $('#node-input-roleIdentity').val(response.id);
+              $('#node-input-roleIdentityDisplay').val(response.name);
+              
+              // Close the dialog
+              $('#role-editor-dialog').dialog('close');
+              RED.notify('Role saved successfully', 'success');
+            } else {
+              RED.notify('Error saving role', 'error');
+            }
+          },
+          error: function(err) {
+            RED.notify('Error saving role: ' + err.statusText, 'error');
+          }
+        });
+      }
+      
+      // Function to enhance role
+      function enhanceRole() {
+        const roleName = $('#role-name').val().trim();
+        const roleDescription = $('#role-description').val().trim();
+        
+        if (!roleName) {
+          RED.notify('Role name is required', 'error');
+          return;
+        }
+        
+        // If no description but name exists, create a generic role description
+        let description = roleDescription;
+        if (!description) {
+          description = 'A role for ' + roleName;
+        }
+        
+        // Get LLM config for enhancement
+        const llmConfigNode = $('#node-input-llmConfig').val();
+        if (!llmConfigNode) {
+          RED.notify('Please select an LLM Config for role enhancement', 'error');
+          return;
+        }
+        
+        // Show loading state
+        const enhanceBtn = $('#role-enhance-btn');
+        const originalBtnText = enhanceBtn.html();
+        enhanceBtn.html('<i class="fa fa-spinner fa-spin"></i> Enhancing...').prop('disabled', true);
+        
+        // Call the role enhancer endpoint
+        $.ajax({
+          url: 'ai-sombrero/enhance-role',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            name: roleName,
+            description: description,
+            llmConfig: llmConfigNode
+          }),
+          success: function(response) {
+            if (response && response.enhanced) {
+              $('#role-description').val(response.enhanced);
+              RED.notify('Role enhanced successfully', 'success');
+            } else {
+              RED.notify('Error enhancing role', 'error');
+            }
+          },
+          error: function(err) {
+            RED.notify('Error enhancing role: ' + err.statusText, 'error');
+          },
+          complete: function() {
+            enhanceBtn.html(originalBtnText).prop('disabled', false);
+          }
+        });
+      }
     },
-    oneditsave: function() {},
+    oneditsave: function() {
+      // Save the role identity values
+      this.roleIdentity = $('#node-input-roleIdentity').val() || '';
+      this.roleIdentityDisplay = $('#node-input-roleIdentityDisplay').val() || '';
+    },
     oneditresize: function() {},
   });
 </script>
