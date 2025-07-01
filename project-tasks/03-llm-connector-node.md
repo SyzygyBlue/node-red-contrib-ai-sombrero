@@ -35,6 +35,20 @@
   - Response schema definition
   - Debug mode toggle
 
+## Database Configuration
+
+### Purpose
+- Provide persistent storage for role identities, job tracking, prompt management, and AI response storage.
+- Enable complex AI orchestration workflows by maintaining state and historical data.
+
+### Requirements
+- [ ] Integrate with existing `db-config` node for database connection management.
+- [ ] Store role identities and their responsibilities/guidelines.
+- [ ] Track job IDs and their associated prompts and AI responses.
+- [ ] Support prompt versioning and optimization.
+- [ ] Enable retrieval of historical data for context and analysis.
+- [ ] Potentially store workflow state for resuming interrupted processes.
+
 ## Implementation Details
 
 ### Method Registry (llm-connector-helpers.js)

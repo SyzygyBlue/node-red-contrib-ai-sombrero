@@ -7,6 +7,10 @@
     <label for="node-input-llmConfig"><i class="fa fa-hat-cowboy"></i> LLM Config</label>
     <input type="text" id="node-input-llmConfig" placeholder="Select LLM Configuration">
   </div>
+  <div class="form-row">
+    <label for="node-input-dbConfig"><i class="fa fa-database"></i> Database Config</label>
+    <input type="text" id="node-input-dbConfig" class="red-ui-typedInput-config">
+  </div>
 </script>
 
 <script type="text/javascript">
@@ -15,7 +19,8 @@
     color: '#a6bbcf',
     defaults: {
       name: { value: "" },
-      llmConfig: { value: "", type: "llm-config", required: true }
+      llmConfig: { value: "", type: "llm-config", required: true },
+      dbConfig: { value: "", type: "dbconfig", required: false }
     },
     inputs: 1,
     outputs: 1,
@@ -24,7 +29,19 @@
       return this.name || "LLM Connector";
     },
     oneditprepare: function() {
-      // Initialize any UI components or event handlers here
+      // Initialize LLM Config dropdown
+      RED.nodes.config.init({
+        id: 'node-input-llmConfig',
+        type: 'llm-config',
+        required: true
+      });
+
+      // Initialize DB Config dropdown
+      RED.nodes.config.init({
+        id: 'node-input-dbConfig',
+        type: 'dbconfig',
+        required: false
+      });
     },
     oneditsave: function() {},
     oneditresize: function() {},
