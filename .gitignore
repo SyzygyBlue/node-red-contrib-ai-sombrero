@@ -16,6 +16,7 @@ coverage/
 /examples/*.json
 /services/*.js
 !services/audit-service.js
+node-red sombrero key (openai).txt
 
 # IDE
 .vscode/

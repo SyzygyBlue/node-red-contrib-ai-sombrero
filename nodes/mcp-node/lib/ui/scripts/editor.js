@@ -76,7 +76,8 @@
     
     // Load a template into a container
     function loadTemplate(templateName, containerId) {
-        $.get("mcp-node/ui/templates/" + templateName, function(data) {
+        // Use the path format that matches the server-side endpoint
+        $.get("/mcp-node/ui/templates/" + templateName, function(data) {
             $("#" + containerId).html(data);
             
             // Initialize components specific to this template

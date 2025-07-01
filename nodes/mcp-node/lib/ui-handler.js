@@ -9,7 +9,9 @@ const fs = require('fs');
 module.exports = function(RED) {
     // Register HTTP endpoints for UI components
     function registerUIEndpoints() {
+    
         // Serve UI files (templates, scripts, styles)
+        // Primary endpoint for UI files
         RED.httpAdmin.get('/mcp-node/ui/:type/:filename', function(req, res) {
             const type = req.params.type;
             const filename = req.params.filename;
@@ -129,6 +131,7 @@ module.exports = function(RED) {
         });
     }
     
+    // Return the function for the caller to execute at the appropriate time
     return {
         registerUIEndpoints
     };
