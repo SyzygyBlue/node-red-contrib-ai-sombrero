@@ -1,0 +1,49 @@
+vendor.js?v=44ce7adc1044:4 JQMIGRATE: Migrate is installed, version 3.3.0
+red.min.js?v=44ce7adc1044:16 Node-RED: 4.0.9
+red.min.js?v=44ce7adc1044:16 Versions
+red.min.js?v=44ce7adc1044:16 Projects disabled
+VM26871:22 oneditprepare - Initial node values: {llmConfig: '45d69bf6026d1b3f', dbConfig: '', nodeId: 'b9fc0b5b9c3d8387', _config: 'exists'}
+red.min.js?v=44ce7adc1044:18 oneditprepare b9fc0b5b9c3d8387 llm-connector TypeError: Cannot read properties of undefined (reading 'init')
+red.min.js?v=44ce7adc1044:18 TypeError: Cannot read properties of undefined (reading 'init')
+    at Proxy.oneditprepare (<anonymous>:30:24)
+    at t (red.min.js?v=44ce7adc1044:18:432779)
+    at k (red.min.js?v=44ce7adc1044:18:434152)
+    at Object.open (red.min.js?v=44ce7adc1044:18:449354)
+    at n (red.min.js?v=44ce7adc1044:19:45728)
+    at Object.show (red.min.js?v=44ce7adc1044:19:46972)
+    at Object.edit (red.min.js?v=44ce7adc1044:18:450171)
+    at SVGRectElement.mt (red.min.js?v=44ce7adc1044:18:237774)
+    at SVGRectElement.i [as __onmouseup] (vendor.js?v=44ce7adc1044:28:7943)
+VM26871:324 oneditsave - Before saving: {nodeId: 'b9fc0b5b9c3d8387', llmConfig: '45d69bf6026d1b3f', dbConfig: '', llmConfigInput: '45d69bf6026d1b3f', dbConfigInput: '79d9fdc98e4a06ed', …}
+VM26871:342 oneditsave - Values to save: {llmConfigValue: '45d69bf6026d1b3f', dbConfigValue: '79d9fdc98e4a06ed'}
+VM26871:353 oneditsave - After saving: {llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed'}
+VM26871:22 oneditprepare - Initial node values: {llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed', nodeId: 'b9fc0b5b9c3d8387', _config: 'exists'}
+red.min.js?v=44ce7adc1044:18 oneditprepare b9fc0b5b9c3d8387 llm-connector TypeError: Cannot read properties of undefined (reading 'init')
+red.min.js?v=44ce7adc1044:18 TypeError: Cannot read properties of undefined (reading 'init')
+    at Proxy.oneditprepare (<anonymous>:30:24)
+    at t (red.min.js?v=44ce7adc1044:18:432779)
+    at k (red.min.js?v=44ce7adc1044:18:434152)
+    at Object.open (red.min.js?v=44ce7adc1044:18:449354)
+    at n (red.min.js?v=44ce7adc1044:19:45728)
+    at Object.show (red.min.js?v=44ce7adc1044:19:46972)
+    at Object.edit (red.min.js?v=44ce7adc1044:18:450171)
+    at SVGRectElement.mt (red.min.js?v=44ce7adc1044:18:237774)
+    at SVGRectElement.i [as __onmouseup] (vendor.js?v=44ce7adc1044:28:7943)
+VM26871:324 oneditsave - Before saving: {nodeId: 'b9fc0b5b9c3d8387', llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed', llmConfigInput: '45d69bf6026d1b3f', dbConfigInput: '79d9fdc98e4a06ed', …}
+VM26871:342 oneditsave - Values to save: {llmConfigValue: '45d69bf6026d1b3f', dbConfigValue: '79d9fdc98e4a06ed'}
+VM26871:353 oneditsave - After saving: {llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed'}
+VM26871:22 oneditprepare - Initial node values: {llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed', nodeId: 'b9fc0b5b9c3d8387', _config: 'exists'}
+red.min.js?v=44ce7adc1044:18 oneditprepare b9fc0b5b9c3d8387 llm-connector TypeError: Cannot read properties of undefined (reading 'init')
+red.min.js?v=44ce7adc1044:18 TypeError: Cannot read properties of undefined (reading 'init')
+    at Proxy.oneditprepare (<anonymous>:30:24)
+    at t (red.min.js?v=44ce7adc1044:18:432779)
+    at k (red.min.js?v=44ce7adc1044:18:434152)
+    at Object.open (red.min.js?v=44ce7adc1044:18:449354)
+    at n (red.min.js?v=44ce7adc1044:19:45728)
+    at Object.show (red.min.js?v=44ce7adc1044:19:46972)
+    at Object.edit (red.min.js?v=44ce7adc1044:18:450171)
+    at SVGRectElement.mt (red.min.js?v=44ce7adc1044:18:237774)
+    at SVGRectElement.i [as __onmouseup] (vendor.js?v=44ce7adc1044:28:7943)
+VM26871:324 oneditsave - Before saving: {nodeId: 'b9fc0b5b9c3d8387', llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed', llmConfigInput: '45d69bf6026d1b3f', dbConfigInput: '79d9fdc98e4a06ed', …}
+VM26871:342 oneditsave - Values to save: {llmConfigValue: '45d69bf6026d1b3f', dbConfigValue: '79d9fdc98e4a06ed'}
+VM26871:353 oneditsave - After saving: {llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed'}

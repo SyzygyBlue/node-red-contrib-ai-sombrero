@@ -1,11 +1,11 @@
-<script type="text/html" data-template-name="dbconfig">
+<script type="text/html" data-template-name="dbconfig-node">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
+        <input type="text" id="node-config-input-name" placeholder="Name">
     </div>
     <div class="form-row">
         <label for="node-input-dbType"><i class="fa fa-database"></i> Database Type</label>
-        <select id="node-input-dbType">
+        <select id="node-config-input-dbType">
             <option value="postgresql">PostgreSQL</option>
             <option value="mysql">MySQL</option>
             <option value="sqlite">SQLite</option>
@@ -13,31 +13,31 @@
     </div>
     <div class="form-row" id="db-host-row">
         <label for="node-input-host"><i class="fa fa-server"></i> Host</label>
-        <input type="text" id="node-input-host" placeholder="localhost">
+        <input type="text" id="node-config-input-host" placeholder="localhost">
     </div>
     <div class="form-row" id="db-port-row">
         <label for="node-input-port"><i class="fa fa-plug"></i> Port</label>
-        <input type="text" id="node-input-port" placeholder="5432">
+        <input type="text" id="node-config-input-port" placeholder="5432">
     </div>
     <div class="form-row" id="db-user-row">
         <label for="node-input-user"><i class="fa fa-user"></i> User</label>
-        <input type="text" id="node-input-user" placeholder="user">
+        <input type="text" id="node-config-input-user" placeholder="user">
     </div>
     <div class="form-row" id="db-password-row">
         <label for="node-input-password"><i class="fa fa-key"></i> Password</label>
-        <input type="password" id="node-input-password" placeholder="password">
+        <input type="password" id="node-config-input-password" placeholder="password">
     </div>
     <div class="form-row" id="db-database-row">
         <label for="node-input-database"><i class="fa fa-book"></i> Database</label>
-        <input type="text" id="node-input-database" placeholder="database_name">
+        <input type="text" id="node-config-input-database" placeholder="database_name">
     </div>
     <div class="form-row" id="db-filename-row" style="display:none;">
         <label for="node-input-filename"><i class="fa fa-file"></i> SQLite File</label>
-        <input type="text" id="node-input-filename" placeholder="/path/to/database.sqlite">
+        <input type="text" id="node-config-input-filename" placeholder="/path/to/database.sqlite">
     </div>
 </script>
 
-<script type="text/html" data-help-name="dbconfig">
+<script type="text/html" data-help-name="dbconfig-node">
     <p>A Node-RED configuration node for managing database connections.</p>
     <p>Supports PostgreSQL, MySQL, and SQLite.</p>
     <h3>Details</h3>
@@ -62,7 +62,7 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('dbconfig', {
+    RED.nodes.registerType('dbconfig-node', {
         category: 'config',
         icon: "font-awesome/fa-database",
         defaults: {
@@ -79,7 +79,7 @@
             return this.name || "Database Config";
         },
         oneditprepare: function() {
-            const dbTypeField = $('#node-input-dbType');
+            const dbTypeField = $('#node-config-input-dbType');
             const hostRow = $('#db-host-row');
             const portRow = $('#db-port-row');
             const userRow = $('#db-user-row');

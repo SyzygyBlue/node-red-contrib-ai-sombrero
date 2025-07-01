@@ -8,14 +8,31 @@ module.exports = function (RED) {
   const { validateMessage, normalizeMessage, processMessage } = require('./llm-connector-helpers');
   const roleHelper = require('./llm-connector-role-based-helper');
   const roleApi = require('./role-api')(RED);
+  const dbConfigUtils = require('../shared/db-config-utils')(RED);
 
   function LLMConnectorNode(config) {
     RED.nodes.createNode(this, config);
+
+    // Debug logging for incoming config
+    this.log(`LLM Connector node created with config: ${JSON.stringify({
+      id: this.id,
+      name: config.name,
+      llmConfig: config.llmConfig,
+      dbConfig: config.dbConfig,
+      roleIdentity: config.roleIdentity
+    })}`);
 
     // Get configuration
     this.name = config.name || 'LLM Connector';
     this.llmConfig = RED.nodes.getNode(config.llmConfig);
     this.dbConfig = RED.nodes.getNode(config.dbConfig);
+    
+    // Debug logging for resolved nodes
+    this.log(`LLM Connector node resolved config nodes: ${JSON.stringify({
+      llmConfigResolved: this.llmConfig ? this.llmConfig.id : 'null',
+      dbConfigResolved: this.dbConfig ? this.dbConfig.id : 'null'
+    })}`);
+    
     this.roleIdentity = config.roleIdentity || '';
     this.roleIdentityDisplay = config.roleIdentityDisplay || '';
     this.role = config.role || 'assistant';

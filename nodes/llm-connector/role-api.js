@@ -4,7 +4,10 @@
  */
 
 module.exports = function(RED) {
+  const path = require('path');
+  const fs = require('fs');
   const { createPromptEnhancer } = require('../../shared/prompt-enhancer');
+  const dbConfigUtils = require('../../nodes/shared/db-config-utils')(RED);
   
   /**
    * Initialize the role identity API endpoints
@@ -18,13 +21,13 @@ module.exports = function(RED) {
           return res.status(400).json({ error: 'Database config node ID is required' });
         }
         
-        const dbConfigNode = RED.nodes.getNode(dbConfigNodeId);
+        const dbConfigNode = dbConfigUtils.getDbConfigNode(dbConfigNodeId);
         if (!dbConfigNode) {
           return res.status(404).json({ error: 'Database config node not found' });
         }
         
         // Get roles from database
-        const roles = await getRolesFromDb(dbConfigNode);
+        const roles = await getRolesFromDb(dbConfigNodeId);
         res.json(roles);
       } catch (error) {
         console.error('Error fetching roles:', error);
@@ -41,13 +44,8 @@ module.exports = function(RED) {
           return res.status(400).json({ error: 'Role data and database config node ID are required' });
         }
         
-        const dbConfigNode = RED.nodes.getNode(dbConfigNodeId);
-        if (!dbConfigNode) {
-          return res.status(404).json({ error: 'Database config node not found' });
-        }
-        
         // Save role to database
-        const savedRole = await saveRoleToDb(role, dbConfigNode);
+        const savedRole = await saveRoleToDb(role, dbConfigNodeId);
         res.json(savedRole);
       } catch (error) {
         console.error('Error saving role:', error);
@@ -81,52 +79,51 @@ module.exports = function(RED) {
   
   /**
    * Get roles from database
-   * @param {Object} dbConfigNode - Database config node
+   * @param {string} dbConfigNodeId - Database config node ID
    * @returns {Promise<Array>} - Array of roles
    */
-  async function getRolesFromDb(dbConfigNode) {
-    // This is a placeholder implementation
-    // In a real implementation, this would query the database using the dbConfigNode
-    
-    // Helper function for mock roles
-    function getMockRoles() {
-      return [
-        { id: '1', name: 'Solutions Architect', description: 'Designs high-level software architecture based on requirements.' },
-        { id: '2', name: 'Project Manager', description: 'Oversees project execution, timeline, and resource allocation.' },
-        { id: '3', name: 'Developer', description: 'Implements software components based on specifications.' }
-      ];
-    }
-    
+  async function getRolesFromDb(dbConfigNodeId) {
     try {
-      // Check if dbConfigNode has a getClient method (for database access)
-      if (dbConfigNode.getClient) {
-        try {
-          const client = await dbConfigNode.getClient();
-          
-          // Check if roles table exists, create if it doesn't
-          await client.query(`
-            CREATE TABLE IF NOT EXISTS roles (
-              id SERIAL PRIMARY KEY,
-              name VARCHAR(255) NOT NULL,
-              description TEXT,
-              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-          `);
-          
-          // Query roles table
-          const result = await client.query(
-            'SELECT id, name, description, created_at, updated_at FROM roles ORDER BY name ASC'
-          );
-          
-          return result.rows;
-        } catch (dbError) {
-          console.error('Database connection error:', dbError);
-          // Fall back to mock data if database connection fails
-          return getMockRoles();
-        }
-      } else {
+      const dbConfigNode = dbConfigUtils.getDbConfigNode(dbConfigNodeId);
+      
+      if (!dbConfigNode) {
         // No database client available, return mock data
+        return getMockRoles();
+      }
+      
+      // Ensure roles table exists using the shared utility
+      const schema = `
+        id ${dbConfigNode.dbType === 'sqlite' ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'SERIAL PRIMARY KEY'},
+        name ${dbConfigNode.dbType === 'sqlite' ? 'TEXT' : 'VARCHAR(255)'} NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      `;
+      
+      try {
+        await dbConfigUtils.createTableIfNotExists(dbConfigNode, 'roles', schema);
+      } catch (tableErr) {
+        console.error('Error creating roles table:', tableErr);
+        // Fall back to mock data if database connection fails
+        return getMockRoles();
+      }
+      
+      // Query roles table using the shared utility
+      try {
+        const query = dbConfigNode.dbType === 'postgresql' ?
+          'SELECT id, name, description, created_at, updated_at FROM roles ORDER BY name ASC' :
+          'SELECT id, name, description, created_at, updated_at FROM roles ORDER BY name ASC';
+        
+        const result = await dbConfigUtils.executeQuery(dbConfigNode, query);
+        
+        if (dbConfigNode.dbType === 'postgresql') {
+          return result.rows;
+        } else {
+          return result;
+        }
+      } catch (dbError) {
+        console.error('Database connection error:', dbError);
+        // Fall back to mock data if database connection fails
         return getMockRoles();
       }
     } catch (error) {
@@ -136,76 +133,107 @@ module.exports = function(RED) {
   }
   
   /**
+   * Helper function for mock roles
+   * @returns {Array} - Array of mock roles
+   */
+  function getMockRoles() {
+    return [
+      { id: '1', name: 'Solutions Architect', description: 'Designs high-level software architecture based on requirements.' },
+      { id: '2', name: 'Project Manager', description: 'Oversees project execution, timeline, and resource allocation.' },
+      { id: '3', name: 'Developer', description: 'Implements software components based on specifications.' }
+    ];
+  }
+  
+  /**
+   * Helper function to create a mock role response
+   * @param {Object} role - Role object
+   * @returns {Object} - Mock role response
+   */
+  function createMockRole(role) {
+    return {
+      id: role.id || Math.random().toString(36).substring(2, 15),
+      name: role.name,
+      description: role.description,
+      system_prompt: role.systemPrompt,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+  
+  /**
    * Save role to database
    * @param {Object} role - Role object
-   * @param {Object} dbConfigNode - Database config node
+   * @param {string} dbConfigNodeId - Database config node ID
    * @returns {Promise<Object>} - Saved role
    */
-  async function saveRoleToDb(role, dbConfigNode) {
-    // This is a placeholder implementation
-    // In a real implementation, this would save to the database using the dbConfigNode
-    
-    // Helper function to create a mock role response
-    function createMockRole(role) {
-      return {
-        id: role.id || Math.random().toString(36).substring(2, 15),
-        name: role.name,
-        description: role.description,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    }
-    
+  async function saveRoleToDb(role, dbConfigNodeId) {
     try {
-      // Check if dbConfigNode has a getClient method (for database access)
-      if (dbConfigNode.getClient) {
-        try {
-          const client = await dbConfigNode.getClient();
-          
-          // Ensure roles table exists
-          await client.query(`
-            CREATE TABLE IF NOT EXISTS roles (
-              id SERIAL PRIMARY KEY,
-              name VARCHAR(255) NOT NULL,
-              description TEXT,
-              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-          `);
-          
-          let result;
-          
-          if (role.id) {
-            // Update existing role
-            result = await client.query(
-              'UPDATE roles SET name = $1, description = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
-              [role.name, role.description, role.id]
-            );
-          } else {
-            // Insert new role
-            result = await client.query(
-              'INSERT INTO roles (name, description, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING *',
-              [role.name, role.description]
-            );
-          }
-          
-          if (result.rows.length > 0) {
-            return result.rows[0];
-          } else {
-            throw new Error('Failed to save role');
-          }
-        } catch (dbError) {
-          console.error('Database connection error when saving role:', dbError);
-          // Fall back to mock response
-          return createMockRole(role);
-        }
-      } else {
-        // No database client available, return mock response
+      // Get the DB Config node using the shared utility
+      const dbConfigNode = dbConfigUtils.getDbConfigNode(dbConfigNodeId);
+
+      // If no DB Config node, use mock data
+      if (!dbConfigNode) {
         return createMockRole(role);
       }
-    } catch (error) {
-      console.error('Database error when saving role:', error);
-      throw new Error('Database error: ' + error.message);
+
+      // Ensure the roles table exists using the shared utility
+      const schema = `
+        id ${dbConfigNode.dbType === 'sqlite' ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'SERIAL PRIMARY KEY'},
+        name ${dbConfigNode.dbType === 'sqlite' ? 'TEXT' : 'VARCHAR(255)'} NOT NULL,
+        description TEXT,
+        system_prompt TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      `;
+      
+      try {
+        await dbConfigUtils.createTableIfNotExists(dbConfigNode, 'roles', schema);
+      } catch (tableErr) {
+        console.error('Error creating roles table:', tableErr);
+        return createMockRole(role);
+      }
+
+      // Save the role to the database using the shared utility
+      try {
+        let result;
+        if (role.id) {
+          // Update existing role
+          const query = dbConfigNode.dbType === 'postgresql' ?
+            'UPDATE roles SET name = $1, description = $2, system_prompt = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *' :
+            'UPDATE roles SET name = ?, description = ?, system_prompt = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+          
+          const params = [role.name, role.description, role.systemPrompt, role.id];
+          result = await dbConfigUtils.executeQuery(dbConfigNode, query, params);
+          
+          if (dbConfigNode.dbType === 'postgresql') {
+            return result.rows[0];
+          } else {
+            return { ...role, id: role.id };
+          }
+        } else {
+          // Insert new role
+          const query = dbConfigNode.dbType === 'postgresql' ?
+            'INSERT INTO roles (name, description, system_prompt) VALUES ($1, $2, $3) RETURNING *' :
+            'INSERT INTO roles (name, description, system_prompt) VALUES (?, ?, ?)';
+          
+          const params = [role.name, role.description, role.systemPrompt];
+          result = await dbConfigUtils.executeQuery(dbConfigNode, query, params);
+          
+          if (dbConfigNode.dbType === 'postgresql') {
+            return result.rows[0];
+          } else if (dbConfigNode.dbType === 'mysql') {
+            return { ...role, id: result.insertId };
+          } else if (dbConfigNode.dbType === 'sqlite') {
+            return { ...role, id: result.lastID };
+          }
+        }
+      } catch (saveErr) {
+        console.error('Error saving role to database:', saveErr);
+        return createMockRole(role);
+      }
+    } catch (err) {
+      console.error('Error in saveRoleToDb:', err);
+      return createMockRole(role);
     }
   }
   

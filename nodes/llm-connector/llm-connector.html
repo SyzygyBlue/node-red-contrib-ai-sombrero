@@ -21,6 +21,8 @@
   </div>
 </script>
 
+
+
 <script type="text/javascript">
   RED.nodes.registerType('llm-connector', {
     category: 'Sombrero-AI',
@@ -28,7 +30,7 @@
     defaults: {
       name: { value: "" },
       llmConfig: { value: "", type: "llm-config", required: true },
-      dbConfig: { value: "", type: "dbconfig", required: false },
+      dbConfig: { value: "", type: "dbconfig-node", required: false },
       roleIdentity: { value: "" },
       roleIdentityDisplay: { value: "" }
     },
@@ -41,6 +43,14 @@
     oneditprepare: function() {
       const node = this;
       
+      // Debug logging for initial values
+      console.log('oneditprepare - Initial node values:', {
+        llmConfig: node.llmConfig,
+        dbConfig: node.dbConfig,
+        nodeId: node.id,
+        _config: node._config ? 'exists' : 'undefined'
+      });
+      
       // Initialize LLM Config dropdown
       RED.nodes.config.init({
         id: 'node-input-llmConfig',
@@ -51,9 +61,22 @@
       // Initialize DB Config dropdown
       RED.nodes.config.init({
         id: 'node-input-dbConfig',
-        type: 'dbconfig',
+        type: 'dbconfig-node',
         required: false
       });
+      
+      // Debug logging after initialization
+      setTimeout(() => {
+        console.log('oneditprepare - After initialization:', {
+          llmConfigValue: $('#node-input-llmConfig').val(),
+          dbConfigValue: $('#node-input-dbConfig').val()
+        });
+      }, 500);
+      
+      // Debug logging after initialization
+      setTimeout(() => {
+        console.log('oneditprepare - After init dbConfig value:', $('#node-input-dbConfig').val());
+      }, 500);
       
       // Initialize Role Identity field
       if (node.roleIdentity && node.roleIdentityDisplay) {
@@ -322,9 +345,41 @@
       }
     },
     oneditsave: function() {
+      // Debug logging before save
+      console.log('oneditsave - Before saving:', {
+        nodeId: this.id,
+        llmConfig: this.llmConfig,
+        dbConfig: this.dbConfig,
+        llmConfigInput: $('#node-input-llmConfig').val(),
+        dbConfigInput: $('#node-input-dbConfig').val(),
+        _config: this._config ? 'exists' : 'undefined'
+      });
+      
       // Save the role identity values
       this.roleIdentity = $('#node-input-roleIdentity').val() || '';
       this.roleIdentityDisplay = $('#node-input-roleIdentityDisplay').val() || '';
+      
+      // Explicitly save the config node values for debugging
+      const llmConfigValue = $('#node-input-llmConfig').val();
+      const dbConfigValue = $('#node-input-dbConfig').val();
+      
+      // Log the values we're about to save
+      console.log('oneditsave - Values to save:', {
+        llmConfigValue: llmConfigValue,
+        dbConfigValue: dbConfigValue
+      });
+      
+      // Persist selected config nodes
+      this.llmConfig = llmConfigValue;
+      this.dbConfig = dbConfigValue;
+
+      // Debug logging after save
+      setTimeout(() => {
+        console.log('oneditsave - After saving:', {
+          llmConfig: this.llmConfig,
+          dbConfig: this.dbConfig
+        });
+      }, 100);
     },
     oneditresize: function() {},
   });

@@ -118,7 +118,7 @@ module.exports = function(RED) {
         };
     }
 
-    RED.nodes.registerType("dbconfig", DbConfigNode, {
+    RED.nodes.registerType("dbconfig-node", DbConfigNode, {
         category: "config", // Add this line
         credentials: {
             password: { type: "password" }
