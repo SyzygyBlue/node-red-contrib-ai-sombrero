@@ -13,7 +13,9 @@
             rules: { value: [] },
             aiPromptTemplate: { value: "" },
             outputLabels: { value: [] },
-            debugMode: { value: false }
+            debugMode: { value: false },
+            llmConfig: { value: "", type: "llm-config", required: true },
+            dbConfig: { value: "", type: "dbconfig-node", required: false }
         },
         inputs: 1,
         outputs: 0,
@@ -21,6 +23,18 @@
         oneditprepare: function() {
             // Load external editor scripts
             $.getScript('mcp-node/lib/ui/scripts/editor.js');
+
+            // Initialize LLM & DB config dropdowns
+            RED.nodes.config.init({
+                id: 'node-input-llmConfig',
+                type: 'llm-config',
+                required: true
+            });
+            RED.nodes.config.init({
+                id: 'node-input-dbConfig',
+                type: 'dbconfig-node',
+                required: false
+            });
         }
     });
 </script>
@@ -30,6 +44,14 @@
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-llmConfig"><i class="fa fa-hat-cowboy"></i> LLM Config</label>
+        <input type="text" id="node-input-llmConfig" placeholder="Select LLM Configuration">
+    </div>
+    <div class="form-row">
+        <label for="node-input-dbConfig"><i class="fa fa-database"></i> Database Config</label>
+        <input type="text" id="node-input-dbConfig" placeholder="Select Database Configuration">
     </div>
 
     <!-- Placeholder for new sub-screen triggers -->

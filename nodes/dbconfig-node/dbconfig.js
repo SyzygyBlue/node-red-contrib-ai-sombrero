@@ -56,6 +56,9 @@ module.exports = function(RED) {
                         node.log(`Connected to MySQL database: ${node.database}`);
                         break;
                     case 'sqlite':
+                        // SQLite does not need host/port/user/password
+                        node.user = '';
+                        node.password = '';
                         const sqlite3 = require('sqlite3').verbose();
                         const { open } = require('sqlite');
                         node.connection = await open({

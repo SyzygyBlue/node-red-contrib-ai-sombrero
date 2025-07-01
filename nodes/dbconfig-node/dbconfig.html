@@ -70,9 +70,9 @@
             dbType: { value: "postgresql", required: true },
             host: { value: "localhost", required: true },
             port: { value: "5432", required: true, validate: RED.validators.number() },
-            user: { value: "", required: true },
-            password: { value: "", required: true },
-            database: { value: "", required: true },
+            user: { value: "", required: false },
+            password: { value: "", required: false },
+            database: { value: "", required: false },
             filename: { value: "" }
         },
         label: function() {
