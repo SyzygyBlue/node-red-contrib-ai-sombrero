@@ -17,6 +17,14 @@
             return this.name || "LLM Config";
         },
         oneditprepare: function() {
+            const node = this;
+            
+            // Set initial values for provider-specific fields
+            if (node.baseUrl) {
+                const provider = node.provider || 'openai';
+                $(`#node-config-input-${provider}-baseUrl`).val(node.baseUrl);
+            }
+            
             // Provider selection change handler
             $("#node-config-input-provider").on("change", function() {
                 const provider = $(this).val();
@@ -66,9 +74,20 @@
                         modelSelect.append(new Option("grok-1", "grok-1"));
                         break;
                 }
+                
+                // Select the current model if it exists
+                if (node.model) {
+                    modelSelect.val(node.model);
+                }
             }
         },
-        oneditsave: function() {}
+        oneditsave: function() {
+            // Get the current provider
+            const provider = $("#node-config-input-provider").val();
+            
+            // Get the baseUrl from the provider-specific input
+            this.baseUrl = $(`#node-config-input-${provider}-baseUrl`).val();
+        }
     });
 </script>
 
@@ -103,19 +122,47 @@
     <!-- Provider-specific configurations -->
     <div id="openai-config" class="provider-specific">
         <div class="form-row">
-            <label for="node-config-input-baseUrl"><i class="fa fa-link"></i> Base URL</label>
-            <input type="text" id="node-config-input-baseUrl" placeholder="https://api.openai.com/v1">
+            <label for="node-config-input-openai-baseUrl"><i class="fa fa-link"></i> Base URL</label>
+            <input type="text" id="node-config-input-openai-baseUrl" class="baseUrl-input" placeholder="https://api.openai.com/v1">
         </div>
     </div>
     
     <div id="azure-config" class="provider-specific">
         <div class="form-row">
-            <label for="node-config-input-baseUrl"><i class="fa fa-link"></i> Endpoint</label>
-            <input type="text" id="node-config-input-baseUrl" placeholder="https://your-resource.openai.azure.com">
+            <label for="node-config-input-azure-baseUrl"><i class="fa fa-link"></i> Endpoint</label>
+            <input type="text" id="node-config-input-azure-baseUrl" class="baseUrl-input" placeholder="https://your-resource.openai.azure.com">
         </div>
         <div class="form-row">
             <label for="node-config-input-version"><i class="fa fa-code-branch"></i> API Version</label>
             <input type="text" id="node-config-input-version" placeholder="2023-05-15">
+        </div>
+    </div>
+    
+    <div id="anthropic-config" class="provider-specific">
+        <div class="form-row">
+            <label for="node-config-input-anthropic-baseUrl"><i class="fa fa-link"></i> Base URL</label>
+            <input type="text" id="node-config-input-anthropic-baseUrl" class="baseUrl-input" placeholder="https://api.anthropic.com">
+        </div>
+    </div>
+    
+    <div id="google-config" class="provider-specific">
+        <div class="form-row">
+            <label for="node-config-input-google-baseUrl"><i class="fa fa-link"></i> Base URL</label>
+            <input type="text" id="node-config-input-google-baseUrl" class="baseUrl-input" placeholder="https://generativelanguage.googleapis.com">
+        </div>
+    </div>
+    
+    <div id="deepseek-config" class="provider-specific">
+        <div class="form-row">
+            <label for="node-config-input-deepseek-baseUrl"><i class="fa fa-link"></i> Base URL</label>
+            <input type="text" id="node-config-input-deepseek-baseUrl" class="baseUrl-input" placeholder="https://api.deepseek.com">
+        </div>
+    </div>
+    
+    <div id="xai-config" class="provider-specific">
+        <div class="form-row">
+            <label for="node-config-input-xai-baseUrl"><i class="fa fa-link"></i> Base URL</label>
+            <input type="text" id="node-config-input-xai-baseUrl" class="baseUrl-input" placeholder="https://api.xai.com">
         </div>
     </div>
 </script>
