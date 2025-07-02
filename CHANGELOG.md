@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2025-07-02
+### Added
+- Local **Ollama (local)** provider support in the LLM Config node
+  - New `callOllama` helper and connectivity test
+  - Provider option & model suggestions in the editor UI
+- Default model suggestions for popular open-source models (`deepseek-r1`, `mistral:7b-instruct`, `llama3:8b`, `codellama:7b-instruct`, `devstral:28b`).
+### Changed
+- LLM Config editor hides the API-Key field when Ollama is selected.
+### Fixed
+- Standardised helper return format (`{ text }`) for Ollama responses to match other providers.
+
+
 ## [0.2.7] - 2025-07-02
 ### Added
 - Role Manager UI with REST-based CRUD operations and AI-driven prompt enhancement.

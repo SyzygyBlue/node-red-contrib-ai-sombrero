@@ -21,8 +21,8 @@ function validateConfig(config, credentials) {
     throw new Error('Provider is required');
   }
 
-  // Common validation
-  if (!credentials || !credentials.apiKey) {
+  // Common validation (Ollama does not require an API key)
+  if (config.provider !== 'ollama' && (!credentials || !credentials.apiKey)) {
     throw new Error('API Key is required');
   }
 
@@ -55,6 +55,9 @@ function validateConfig(config, credentials) {
     case 'xai':
       // xAI validation is handled by common validation
       break;
+    case 'ollama':
+      // Ollama validation is handled by common validation (no extra checks)
+      break;
     default:
       throw new Error(`Unsupported provider: ${config.provider}`);
   }
@@ -81,6 +84,9 @@ function normalizeConfig(config) {
       break;
     case 'azure':
       normalized.version = normalized.version || '2023-05-15';
+      break;
+    case 'ollama':
+      normalized.baseUrl = normalized.baseUrl || 'http://localhost:11434';
       break;
     case 'anthropic':
       normalized.baseUrl = normalized.baseUrl || 'https://api.anthropic.com';
@@ -161,6 +167,8 @@ async function testConnection(provider, config, credentials) {
         return testAzureConnection(config.endpoint, credentials.apiKey);
       case 'custom':
         return testCustomConnection(config.endpoint, credentials);
+      case 'ollama':
+        return testOllamaConnection(config.baseUrl);
       default:
         throw new Error(`Unsupported provider: ${provider}`);
     }
@@ -195,6 +203,15 @@ async function testCustomConnection(endpoint, credentials) {
   return true; // Placeholder
 }
 
+async function testOllamaConnection(baseUrl = 'http://localhost:11434') {
+  try {
+    const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/tags`);
+    return res.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
 /**
  * Calls the LLM provider with the given parameters
  * @param {string} provider - The provider name
@@ -216,6 +233,8 @@ async function callLLM(provider, config, credentials, params) {
         return callAzure(config.endpoint, credentials.apiKey, { prompt, max_tokens, temperature, stop });
       case 'custom':
         return callCustomEndpoint(config.endpoint, credentials, { prompt, max_tokens, temperature, stop });
+      case 'ollama':
+        return callOllama(config.baseUrl, config.model || 'deepseek-r1', { prompt, max_tokens, temperature, stop });
       default:
         throw new Error(`Unsupported provider: ${provider}`);
     }
@@ -331,6 +350,36 @@ async function callCustomEndpoint(endpoint, credentials, { prompt, max_tokens, t
   });
   
   return response.data;
+}
+
+/**
+ * Calls a local Ollama daemon to generate completions.
+ * @param {string} baseUrl - Base URL of the Ollama HTTP API (e.g. http://localhost:11434)
+ * @param {string} model - Model name to use (e.g. deepseek-r1)
+ * @param {Object} options - { prompt, max_tokens, temperature }
+ * @returns {Promise<string>} The generated text
+ */
+async function callOllama(baseUrl = 'http://localhost:11434', model = 'deepseek-r1', { prompt, max_tokens, temperature }) {
+  const endpoint = `${baseUrl.replace(/\/$/, '')}/api/generate`;
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      prompt,
+      stream: false,
+      options: {
+        temperature,
+        num_predict: max_tokens
+      }
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Ollama request failed');
+  }
+  // Wrap to align with other provider responses
+  return { text: data.response ?? data };
 }
 
 module.exports = {

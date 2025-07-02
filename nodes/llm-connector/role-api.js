@@ -57,9 +57,11 @@ module.exports = function(RED) {
     // Endpoint to enhance a role
     RED.httpAdmin.post('/ai-sombrero/enhance-role', RED.auth.needsPermission('ai-sombrero.write'), async function(req, res) {
       try {
-        const { name, description, llmConfig: llmConfigNodeId } = req.body;
+        const roleName = req.body.name || req.body.roleName;
+        const roleDescription = req.body.description || req.body.roleDescription;
+        const llmConfigNodeId = req.body.llmConfigId || req.body.llmConfig;
         
-        if (!name || !description || !llmConfigNodeId) {
+        if (!roleName || !roleDescription || !llmConfigNodeId) {
           return res.status(400).json({ error: 'Role name, description, and LLM config node ID are required' });
         }
         
@@ -69,7 +71,7 @@ module.exports = function(RED) {
         }
         
         // Enhance role description
-        const enhancedDescription = await enhanceRoleDescription(name, description, llmConfigNode);
+        const enhancedDescription = await enhanceRoleDescription(roleName, roleDescription, llmConfigNode);
         res.json({ enhanced: enhancedDescription });
       } catch (error) {
         console.error('Error enhancing role:', error);
@@ -268,7 +270,7 @@ module.exports = function(RED) {
           
           if (llmConfigNode.callLLM) {
             // If the llmConfigNode has a callLLM method, use it
-            return await llmConfigNode.callLLM(options.prompt);
+            return await llmConfigNode.callLLM(options);
           } else {
             // Mock response for testing
             const roleInstructions = `

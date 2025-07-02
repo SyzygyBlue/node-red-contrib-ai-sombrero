@@ -12,6 +12,7 @@
  */
 const Handlebars = require('handlebars');
 const path = require('path');
+const fs = require('fs');
 
 const templates = {};
 
@@ -23,12 +24,18 @@ const templates = {};
  */
 function loadTemplate(context) {
     if (!templates[context]) {
-        try {
-            // Dynamically require the template file
-            const templatePath = path.join(__dirname, 'templates', `${context}.js`);
-            templates[context] = require(templatePath);
-        } catch (error) {
-            throw new Error(`Template not found for context: ${context}. Error: ${error.message}`);
+        // First, check for a .js template module
+        const jsPath = path.join(__dirname, 'templates', `${context}.js`);
+        const hbsPath = path.join(__dirname, 'templates', `${context}.hbs`);
+        if (fs.existsSync(jsPath)) {
+            // eslint-disable-next-line global-require, import/no-dynamic-require
+            templates[context] = require(jsPath);
+        } else if (fs.existsSync(hbsPath)) {
+            // Load raw handlebars template string from .hbs file
+            const hbsContent = fs.readFileSync(hbsPath, 'utf8');
+            templates[context] = { template: hbsContent };
+        } else {
+            throw new Error(`Template not found for context: ${context}. Looked for ${jsPath} and ${hbsPath}`);
         }
     }
     return templates[context];

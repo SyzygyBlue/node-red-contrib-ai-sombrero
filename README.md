@@ -26,7 +26,7 @@ The LLM Connector node enables seamless integration with various LLM providers u
 
 ### Features
 
-- **Multiple LLM Providers**: Connect to OpenAI, Anthropic, Azure OpenAI, and custom endpoints
+- **Multiple LLM Providers**: Connect to OpenAI, Anthropic, Azure OpenAI, Ollama (local), and custom endpoints
 - **Role-Based Processing**: Define different roles (assistant, summarizer, etc.) for different use cases
 - **Debug Mode**: Enable detailed logging and metadata for troubleshooting
 - **Error Handling**: Comprehensive error handling with detailed error messages

@@ -6,7 +6,7 @@
 module.exports = function (RED) {
   'use strict';
 
-  const { validateConfig, normalizeConfig } = require('./llm-config-helpers');
+  const { validateConfig, normalizeConfig, callLLM } = require('./llm-config-helpers');
   const { auditLogger } = require('../../services/audit-service');
 
   function LLMConfigNode(config) {
@@ -75,7 +75,7 @@ module.exports = function (RED) {
       }
       
       // Call the LLM
-      const response = await helpers.callLLM(
+      const response = await callLLM(
         this.provider,
         this.config,
         this.credentials,

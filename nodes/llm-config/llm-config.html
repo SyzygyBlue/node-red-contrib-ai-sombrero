@@ -32,6 +32,13 @@
                 $(".provider-specific").hide();
                 // Show the selected provider section
                 $("#" + provider + "-config").show();
+                // Toggle API key visibility (not needed for Ollama)
+                const apiKeyRow = $("#node-config-input-apiKey").closest('.form-row');
+                if (provider === 'ollama') {
+                    apiKeyRow.hide();
+                } else {
+                    apiKeyRow.show();
+                }
                 
                 // Update model dropdown based on provider
                 updateModelOptions(provider);
@@ -70,6 +77,13 @@
                         modelSelect.append(new Option("deepseek-chat", "deepseek-chat"));
                         modelSelect.append(new Option("deepseek-coder", "deepseek-coder"));
                         break;
+                    case "ollama":
+                        modelSelect.append(new Option("deepseek-r1", "deepseek-r1"));
+                        modelSelect.append(new Option("mistral:7b-instruct", "mistral:7b-instruct"));
+                        modelSelect.append(new Option("llama3:8b", "llama3:8b"));
+                        modelSelect.append(new Option("codellama:7b-instruct", "codellama:7b-instruct"));
+                        modelSelect.append(new Option("devstral:28b", "devstral"));
+                        break;
                     case "xai":
                         modelSelect.append(new Option("grok-1", "grok-1"));
                         break;
@@ -104,6 +118,7 @@
             <option value="anthropic">Anthropic</option>
             <option value="google">Google</option>
             <option value="azure">Azure OpenAI</option>
+            <option value="ollama">Ollama (local)</option>
             <option value="deepseek">Deepseek</option>
             <option value="xai">xAI</option>
         </select>
