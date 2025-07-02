@@ -104,6 +104,12 @@ module.exports = function (RED) {
     processedMsg.workId = workId;
     originalMsg.roleId = roleId;
     processedMsg.roleId = roleId;
+
+    // Also expose human-friendly identity if provided
+    if (node.roleIdentity) {
+      originalMsg.roleIdentity = node.roleIdentity;
+      processedMsg.roleIdentity = node.roleIdentity;
+    }
   }
 
   /**

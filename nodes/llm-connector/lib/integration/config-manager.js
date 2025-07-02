@@ -99,6 +99,11 @@ function validateOllamaConfig(config) {
 }
 
 function validateGenericConfig(config) {
+  // Providers that do not require an API key (e.g. local self-hosted)
+  const noKeyProviders = ['ollama', 'ollama-local', 'localollama'];
+  if (noKeyProviders.includes(String(config.provider).toLowerCase())) {
+    return { valid: true };
+  }
   // For providers without specific validation, just check for an API key
   if (!config.apiKey) {
     return {
