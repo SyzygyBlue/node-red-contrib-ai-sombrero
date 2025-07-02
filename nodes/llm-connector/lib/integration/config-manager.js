@@ -41,6 +41,7 @@ function validateLLMConfig(config) {
   const providerValidators = {
     openai: validateOpenAIConfig,
     anthropic: validateAnthropicConfig,
+    ollama: validateOllamaConfig,
     // Add more providers as needed
   };
 
@@ -92,6 +93,11 @@ function validateAnthropicConfig(config) {
  * Validates generic LLM configuration
  * @private
  */
+function validateOllamaConfig(config) {
+  // Local Ollama server does not require API key
+  return { valid: true };
+}
+
 function validateGenericConfig(config) {
   // For providers without specific validation, just check for an API key
   if (!config.apiKey) {
