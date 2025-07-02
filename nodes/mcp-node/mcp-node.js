@@ -65,8 +65,8 @@ module.exports = function(RED) {
                 
                 // Audit the incoming message
                 if (node.debugMode) {
-                    auditLogger.log('mcp-node', 'input', { 
-                        nodeId: node.id, 
+                    auditLogger.auditLogger.log('mcp-node', 'input', {
+                        nodeId: node.id,
                         msg: msg,
                         config: {
                             routingMode: node.routingMode,
@@ -125,14 +125,14 @@ module.exports = function(RED) {
                         decisionHistory = decisionHistory.slice(0, MAX_HISTORY_SIZE);
                     }
                     
-                    auditLogger.log('mcp-node', 'decision', decisionRecord);
+                    auditLogger.auditLogger.log('mcp-node', 'decision', decisionRecord);
                 }
                 
                 done();
             } catch (error) {
                 // Handle errors
                 node.status({fill:"red", shape:"dot", text:"error"});
-                auditLogger.error('mcp-node', 'processing-error', { 
+                auditLogger.auditLogger.error('mcp-node', 'processing-error', {
                     nodeId: node.id,
                     error: error.message,
                     stack: error.stack

@@ -1,0 +1,45 @@
+{{!--
+  Template: classifier.hbs
+  Purpose : Provide a prompt scaffold for an "expert classifier" role used by the MCP intelligent switch node.
+            The LLM will receive unstructured or semi-structured content and MUST return a concise JSON
+            object with a top-level "classification" field that exactly matches one of the allowed class labels.
+  Inputs   :
+    • expert_name      – Friendly name of the classifier persona (e.g. "Cyber-Security Analyst")
+    • domain           – Short description of the domain of expertise (e.g. "network security events")
+    • allowed_classes  – Comma-separated list or array of possible class labels (e.g. ["malware","phishing","benign"])
+    • payload_excerpt  – The actual content to be classified (string; may be truncated for prompt size)
+    • extra_context    – Optional extra guidance or routing notes
+    • output_schema    – JSON schema or skeleton expected (defaults to `{ "classification": "" }`)
+
+  The enhancer util will compile this template, substituting the placeholders.
+--}}
+
+You are **{{expert_name}}**, an expert in {{domain}}. Your task is to carefully analyse the incoming payload
+and assign **one** of the allowed classes shown below. Act strictly as a classification agent—do not perform any
+additional processing beyond what is required for decision-making.
+
+ALLOWED CLASSES:
+{{#each allowed_classes}}
+  • {{this}}
+{{/each}}
+
+PAYLOAD TO CLASSIFY:
+```
+{{payload_excerpt}}
+```
+{{#if extra_context}}
+ADDITIONAL CONTEXT:
+{{extra_context}}
+{{/if}}
+
+CLASSIFICATION GUIDELINES:
+1. Choose the single label that best matches the payload.
+2. If none apply, and a "none" or "other" class exists, choose it; otherwise choose the closest.
+3. Respond **only** with a valid JSON object matching the schema below—no commentary, no markdown.
+
+EXPECTED OUTPUT SCHEMA:
+```json
+{{#if output_schema}}{{output_schema}}{{else}}{ "classification": "" }{{/if}}
+```
+
+BEGIN YOUR ANSWER BELOW:

@@ -16,7 +16,7 @@ module.exports = function(RED) {
     // Endpoint to get all roles
     RED.httpAdmin.get('/ai-sombrero/roles', RED.auth.needsPermission('ai-sombrero.read'), async function(req, res) {
       try {
-        const dbConfigNodeId = req.query.dbConfig;
+        const dbConfigNodeId = req.query.dbConfigId || req.query.dbConfig;
         if (!dbConfigNodeId) {
           return res.status(400).json({ error: 'Database config node ID is required' });
         }
@@ -38,14 +38,15 @@ module.exports = function(RED) {
     // Endpoint to save a role
     RED.httpAdmin.post('/ai-sombrero/roles', RED.auth.needsPermission('ai-sombrero.write'), async function(req, res) {
       try {
-        const { role, dbConfig: dbConfigNodeId } = req.body;
+        const roleData = req.body.roleData || req.body.role;
+        const dbConfigNodeId = req.body.dbConfigId || req.body.dbConfig;
         
-        if (!role || !dbConfigNodeId) {
+        if (!roleData || !dbConfigNodeId) {
           return res.status(400).json({ error: 'Role data and database config node ID are required' });
         }
         
         // Save role to database
-        const savedRole = await saveRoleToDb(role, dbConfigNodeId);
+        const savedRole = await saveRoleToDb(roleData, dbConfigNodeId);
         res.json(savedRole);
       } catch (error) {
         console.error('Error saving role:', error);
@@ -196,6 +197,19 @@ module.exports = function(RED) {
       // Save the role to the database using the shared utility
       try {
         let result;
+        // Helper to retry after adding missing column for legacy tables
+        async function insertWithColumnCheck(query, params) {
+          try {
+            return await dbConfigUtils.executeQuery(dbConfigNode, query, params);
+          } catch (err) {
+            if (dbConfigNode.dbType === 'sqlite' && /no column named system_prompt/i.test(err.message)) {
+              // Legacy table without system_prompt column – add it then retry once
+              await dbConfigUtils.executeQuery(dbConfigNode, 'ALTER TABLE roles ADD COLUMN system_prompt TEXT');
+              return await dbConfigUtils.executeQuery(dbConfigNode, query, params);
+            }
+            throw err;
+          }
+        }
         if (role.id) {
           // Update existing role
           const query = dbConfigNode.dbType === 'postgresql' ?
@@ -203,7 +217,7 @@ module.exports = function(RED) {
             'UPDATE roles SET name = ?, description = ?, system_prompt = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
           
           const params = [role.name, role.description, role.systemPrompt, role.id];
-          result = await dbConfigUtils.executeQuery(dbConfigNode, query, params);
+          result = await insertWithColumnCheck(query, params);
           
           if (dbConfigNode.dbType === 'postgresql') {
             return result.rows[0];
@@ -217,7 +231,7 @@ module.exports = function(RED) {
             'INSERT INTO roles (name, description, system_prompt) VALUES (?, ?, ?)';
           
           const params = [role.name, role.description, role.systemPrompt];
-          result = await dbConfigUtils.executeQuery(dbConfigNode, query, params);
+          result = await insertWithColumnCheck(query, params);
           
           if (dbConfigNode.dbType === 'postgresql') {
             return result.rows[0];

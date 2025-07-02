@@ -216,3 +216,7 @@ Completion Criteria (Final Checklist)
  Circular dependencies and large files (>600 lines) strictly prohibited.
 
 By clearly establishing these architectural rails upfront, we proactively prevent common pitfalls and ensure the project's maintainability, readability, and efficiency long-term.
+
+
+
+NodeJS Backend and NextJS frontend. PostgreSQL storage. Microservice architecture. This is a BDD shop, so design toward the behavior and push small, work-sized chunks downstream, breaking larger projects into managable tasks that a tester and an architect and a scrum master could break into managable pieces to fit into a backlog, adding architectural rails to the project to ensure it stays compliant. Reuse is paramount in this project — make sure shared libraries are created in and kept free of implementation-specific business rules or customizations so it can remain a sharable resource.

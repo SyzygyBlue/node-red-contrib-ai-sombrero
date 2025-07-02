@@ -1,4 +1,4 @@
-const DbConfigNode = require('../dbconfig.js');
+const initDbConfigNode = require('../dbconfig.js');
 
 // Mock database modules
 const mockPgPool = {
@@ -59,12 +59,12 @@ describe('DbConfigNode', () => {
                 // Mock any settings used by dbconfig.js if necessary
             },
         };
-        // Load the node with the mocked RED object
-        DbConfigNode(RED);
+        initDbConfigNode(RED); // Initialize the DbConfigNode with the mocked RED object
+    });
     });
 
     // Helper function to simulate node creation and get a mock node instance
-    const createMockNode = (config) => {
+    const createMockNode = async (config) => {
         const node = {
             id: config.id || 'test-node-id',
             name: config.name || 'test node',
@@ -85,15 +85,51 @@ describe('DbConfigNode', () => {
             },
             ...config
         };
+
         mockNodes.createNode.mockImplementationOnce(function(n, conf) {
             Object.assign(n, node);
         });
+
+        let connectPromise = Promise.resolve(); // Initialize with a resolved promise
+
+        // Temporarily store the original connect function if it exists on the node
+        const originalConnect = node.connect;
+
         // Simulate the node being registered and created
-        mockNodes.registerType.mock.calls.forEach(call => {
-            if (call[0] === 'dbconfig') {
-                call[1].call(node, config);
-            }
+        await new Promise(resolve => {
+            mockNodes.registerType.mock.calls.forEach(call => {
+                if (call[0] === 'dbconfig') {
+                    // Override node.connect temporarily to capture its promise
+                    node.connect = jest.fn(async () => {
+                        // Call the original connect function if it exists
+                        if (originalConnect) {
+                            connectPromise = originalConnect.apply(node); // Capture the promise
+                            await connectPromise;
+                        }
+                        return; // Ensure connect always returns a promise
+                    });
+
+                    // Call the node constructor, passing the mock node as 'this'
+                    call[1].call(node, config);
+
+                    // If node.connect was called by the constructor, await its completion
+                    if (node.connect.mock.calls.length > 0) {
+                        // The constructor called node.connect, so we need to wait for it
+                        // The connectPromise should now hold the promise from the actual connect call
+                        await connectPromise; // Ensure the connect operation completes
+                        resolve(); // Resolve the outer promise after connect finishes
+                    } else {
+                        resolve(); // If connect wasn't called, resolve immediately
+                    }
+                }
+            });
         });
+
+        // Restore the original connect function if it was temporarily overridden
+        if (originalConnect) {
+            node.connect = originalConnect;
+        }
+
         return node;
     };
 
@@ -105,7 +141,7 @@ describe('DbConfigNode', () => {
 
     it('should create a node instance', () => {
         const config = { id: 'n1', name: 'test dbconfig' };
-        const n1 = createMockNode(config);
+        const n1 = await createMockNode(config);
         expect(RED.nodes.createNode).toHaveBeenCalledWith(expect.any(Object), config);
         expect(n1).toBeDefined();
         expect(n1.name).toEqual('test dbconfig');
@@ -117,10 +153,10 @@ describe('DbConfigNode', () => {
             dbType: 'postgresql', host: 'localhost', port: '5432',
             user: 'testuser', password: 'testpassword', database: 'testdb'
         };
-        const n1 = createMockNode(config);
+        const n1 = await createMockNode(config);
 
         // Wait for connection attempt
-        await new Promise(resolve => setTimeout(resolve, 100));
+
 
         expect(n1.status).toHaveBeenCalledWith({ fill: "green", shape: "dot", text: "connected" });
         expect(mockPgPool.query).toHaveBeenCalledWith('SELECT NOW()');
@@ -132,9 +168,9 @@ describe('DbConfigNode', () => {
             dbType: 'mysql', host: 'localhost', port: '3306',
             user: 'testuser', password: 'testpassword', database: 'testdb'
         };
-        const n1 = createMockNode(config);
+        const n1 = await createMockNode(config);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+
 
         expect(n1.status).toHaveBeenCalledWith({ fill: "green", shape: "dot", text: "connected" });
         expect(require('mysql2/promise').createConnection).toHaveBeenCalledTimes(1);
@@ -145,9 +181,9 @@ describe('DbConfigNode', () => {
             id: 'n1', type: 'dbconfig', name: 'sqlite_test',
             dbType: 'sqlite', filename: '/tmp/test.sqlite'
         };
-        const n1 = createMockNode(config);
+        const n1 = await createMockNode(config);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+
 
         expect(n1.status).toHaveBeenCalledWith({ fill: "green", shape: "dot", text: "connected" });
         expect(require('sqlite').open).toHaveBeenCalledWith({
@@ -164,9 +200,9 @@ describe('DbConfigNode', () => {
             dbType: 'postgresql', host: 'badhost', port: '5432',
             user: 'testuser', password: 'testpassword', database: 'testdb'
         };
-        const n1 = createMockNode(config);
+        const n1 = await createMockNode(config);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+
 
         expect(n1.status).toHaveBeenCalledWith({ fill: "red", shape: "ring", text: "disconnected" });
         expect(n1.error).toHaveBeenCalledWith(expect.stringContaining('Failed to connect to database: PG Connection Failed'), expect.any(Error));
@@ -178,9 +214,9 @@ describe('DbConfigNode', () => {
             dbType: 'postgresql', host: 'localhost', port: '5432',
             user: 'testuser', password: 'testpassword', database: 'testdb'
         };
-        const n1 = createMockNode(config);
+        const n1 = await createMockNode(config);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+
         // Ensure connection is established first
         expect(n1.status).toHaveBeenCalledWith({ fill: "green", shape: "dot", text: "connected" });
 

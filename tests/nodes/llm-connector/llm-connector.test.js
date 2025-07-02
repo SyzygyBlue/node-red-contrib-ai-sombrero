@@ -99,7 +99,8 @@ describe('LLM Connector Node', () => {
     
     // Create the LLM Connector node
     console.log('Creating LLM Connector node...');
-    const LLMConnectorNode = require('../../nodes/llm-connector/llm-connector');
+    const LLMConnectorNodeModule = require('../../nodes/llm-connector/llm-connector');
+    const LLMConnectorNode = LLMConnectorNodeModule(RED);
     testNode = createTestNode(RED, LLMConnectorNode, {
       id: 'test-node',
       type: 'llm-connector',

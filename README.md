@@ -31,6 +31,7 @@ The LLM Connector node enables seamless integration with various LLM providers u
 - **Debug Mode**: Enable detailed logging and metadata for troubleshooting
 - **Error Handling**: Comprehensive error handling with detailed error messages
 - **Audit Logging**: Track all LLM interactions for monitoring and debugging
+- **Role Manager UI**: Create, update, search, and AI-enhance role prompts via a modal dialog
 
 ### Installation
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2025-07-02
+### Added
+- Role Manager UI with REST-based CRUD operations and AI-driven prompt enhancement.
+### Changed
+- Aligned UI/backend parameter names (`dbConfigId`/`roleData`).
+### Fixed
+- Automatic SQLite schema migration adds missing `system_prompt` column to `roles`.
+
 ### Added
 - **MCP Node**
   - Dynamic output generation with AI-powered and rule-based routing

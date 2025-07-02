@@ -16,7 +16,7 @@ class PromptEnhancerUI {
     if (!onEnhance || typeof onEnhance !== 'function') {
       throw new Error('onEnhance callback is required');
     }
-    
+
     this.onEnhance = onEnhance;
     this.container = document.getElementById(containerId) || document.body;
     this.styles = {
@@ -46,121 +46,113 @@ class PromptEnhancerUI {
         backgroundColor: 'rgba(0,0,0,0.5)',
         zIndex: 999,
         ...(styles.overlay || {})
-      },
-      // Add other style overrides as needed
+      }
+      // Additional overrides can be added as needed
     };
-    
+
     this.dialog = null;
     this.overlay = null;
     this.originalPrompt = '';
-    
+
     this.initialize();
   }
-  
+
   /**
    * Initialize the UI components
    */
   initialize() {
-    // Create overlay
+    // Overlay
     this.overlay = document.createElement('div');
     Object.assign(this.overlay.style, this.styles.overlay);
     this.overlay.addEventListener('click', () => this.close());
-    
-    // Create dialog
+
+    // Dialog
     this.dialog = document.createElement('div');
     this.dialog.className = 'prompt-enhancer-dialog';
     Object.assign(this.dialog.style, this.styles.dialog);
-    
-    // Build dialog content
+
     this.dialog.innerHTML = `
-      <div class="prompt-enhancer-header" style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-        <h3 style="margin: 0 0 10px 0;"><i class="fa fa-magic"></i> Enhance Prompt</h3>
+      <div class="prompt-enhancer-header" style="margin-bottom:15px;border-bottom:1px solid #eee;padding-bottom:10px;">
+        <h3 style="margin:0 0 10px 0;"><i class="fa fa-magic"></i> Enhance Prompt</h3>
       </div>
-      
-      <div class="prompt-enhancer-body" style="margin-bottom: 15px;">
-        <div class="form-row" style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+
+      <div class="prompt-enhancer-body" style="margin-bottom:15px;">
+        <div class="form-row" style="margin-bottom:15px;">
+          <label style="display:block;margin-bottom:5px;font-weight:bold;">
             <i class="fa fa-comment"></i> Original Prompt
           </label>
-          <textarea id="prompt-enhancer-original" 
-            style="width: 100%; height: 100px; resize: vertical;" 
-            readonly></textarea>
+          <textarea id="prompt-enhancer-original" style="width:100%;height:100px;resize:vertical;" readonly></textarea>
         </div>
-        
-        <div class="form-row" style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+
+        <div class="form-row" style="margin-bottom:15px;">
+          <label style="display:block;margin-bottom:5px;font-weight:bold;">
             <i class="fa fa-magic"></i> Enhancement Instructions
           </label>
-          <textarea id="prompt-enhancer-instructions" 
-            style="width: 100%; height: 80px; resize: vertical;" 
-            placeholder="Describe how you'd like to enhance the prompt (e.g., 'Make it more detailed', 'Focus on technical aspects', etc.)"></textarea>
+          <textarea id="prompt-enhancer-instructions" style="width:100%;height:80px;resize:vertical;" placeholder="Describe how you'd like to enhance the prompt (e.g., 'Make it more detailed')"></textarea>
         </div>
-        
-        <div class="form-row" style="margin-bottom: 15px;">
-          <button id="prompt-enhancer-apply" class="editor-button" style="margin-right: 10px;">
+
+        <div class="form-row" style="margin-bottom:15px;">
+          <button id="prompt-enhancer-apply" class="editor-button" style="margin-right:10px;">
             <i class="fa fa-check"></i> Apply Enhancement
           </button>
           <button id="prompt-enhancer-cancel" class="editor-button">
             <i class="fa fa-times"></i> Cancel
           </button>
         </div>
-        
+
         <div class="form-row">
-          <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+          <label style="display:block;margin-bottom:5px;font-weight:bold;">
             <i class="fa fa-lightbulb-o"></i> Enhanced Prompt
           </label>
-          <textarea id="prompt-enhancer-result" 
-            style="width: 100%; height: 150px; resize: vertical;" 
-            placeholder="Your enhanced prompt will appear here..."></textarea>
+          <textarea id="prompt-enhancer-result" style="width:100%;height:150px;resize:vertical;" placeholder="Your enhanced prompt will appear here..."></textarea>
         </div>
       </div>
-      
-      <div class="prompt-enhancer-footer" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: right;">
+
+      <div class="prompt-enhancer-footer" style="margin-top:15px;padding-top:10px;border-top:1px solid #eee;text-align:right;">
         <button id="prompt-enhancer-close" class="editor-button">
           <i class="fa fa-times"></i> Close
         </button>
       </div>
     `;
-    
-    // Add event listeners
+
+    // Buttons
     const applyBtn = this.dialog.querySelector('#prompt-enhancer-apply');
     const cancelBtn = this.dialog.querySelector('#prompt-enhancer-cancel');
     const closeBtn = this.dialog.querySelector('#prompt-enhancer-close');
-    
+
     applyBtn.addEventListener('click', () => this.handleApply());
     cancelBtn.addEventListener('click', () => this.close());
     closeBtn.addEventListener('click', () => this.close());
-    
-    // Append to container
+
+    // Append to DOM
     this.container.appendChild(this.overlay);
     this.container.appendChild(this.dialog);
   }
-  
+
   /**
-   * Handle the apply enhancement button click
+   * Handle "Apply Enhancement" click
    */
   handleApply() {
     const instructions = this.dialog.querySelector('#prompt-enhancer-instructions').value.trim();
     const resultTextarea = this.dialog.querySelector('#prompt-enhancer-result');
-    
+
     if (!instructions) {
       alert('Please provide enhancement instructions');
       return;
     }
-    
-    // Show loading state
+
     const applyBtn = this.dialog.querySelector('#prompt-enhancer-apply');
     const originalBtnText = applyBtn.innerHTML;
     applyBtn.disabled = true;
     applyBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enhancing...';
-    
-    // Call the enhancement callback
+
+    // Invoke callback
     this.onEnhance(this.originalPrompt, instructions)
-      .then(enhancedPrompt => {
-        resultTextarea.value = enhancedPrompt;
+      .then(enhanced => {
+        resultTextarea.value = enhanced;
       })
-      .catch(error => {
-        console.error('Error enhancing prompt:', error);
+      .catch(err => {
+        console.error('Enhancement failed:', err);
         alert('Failed to enhance prompt. Please try again.');
       })
       .finally(() => {
@@ -168,65 +160,56 @@ class PromptEnhancerUI {
         applyBtn.innerHTML = originalBtnText;
       });
   }
-  
+
   /**
-   * Open the prompt enhancement dialog
-   * @param {string} prompt - The original prompt to enhance
+   * Open the dialog for a given prompt
+   * @param {string} prompt
    */
   open(prompt) {
-    if (!prompt || typeof prompt !== 'string') {
-      console.warn('Invalid prompt provided to PromptEnhancerUI.open()');
-      return;
-    }
-    
+    if (!prompt || typeof prompt !== 'string') return;
     this.originalPrompt = prompt;
-    
-    // Set the original prompt
-    const originalTextarea = this.dialog.querySelector('#prompt-enhancer-original');
-    const instructionsTextarea = this.dialog.querySelector('#prompt-enhancer-instructions');
-    const resultTextarea = this.dialog.querySelector('#prompt-enhancer-result');
-    
-    originalTextarea.value = prompt;
-    instructionsTextarea.value = '';
-    resultTextarea.value = '';
-    
-    // Show the dialog
+
+    this.dialog.querySelector('#prompt-enhancer-original').value = prompt;
+    this.dialog.querySelector('#prompt-enhancer-instructions').value = '';
+    this.dialog.querySelector('#prompt-enhancer-result').value = '';
+
     this.overlay.style.display = 'block';
     this.dialog.style.display = 'block';
-    
-    // Focus on the instructions field
+
     setTimeout(() => {
-      instructionsTextarea.focus();
+      this.dialog.querySelector('#prompt-enhancer-instructions').focus();
     }, 100);
   }
-  
-  /**
-   * Close the prompt enhancement dialog
-   */
+
+  /** Close dialog */
   close() {
     this.overlay.style.display = 'none';
     this.dialog.style.display = 'none';
   }
-  
-  /**
-   * Clean up the UI elements
-   */
+
+  /** Clean-up */
   destroy() {
-    if (this.container && this.overlay && this.overlay.parentNode) {
-      this.container.removeChild(this.overlay);
-    }
-    if (this.container && this.dialog && this.dialog.parentNode) {
-      this.container.removeChild(this.dialog);
-    }
+    if (this.overlay && this.overlay.parentNode) this.overlay.parentNode.removeChild(this.overlay);
+    if (this.dialog && this.dialog.parentNode) this.dialog.parentNode.removeChild(this.dialog);
   }
 }
 
-// Factory function for creating UI instances
-function createPromptEnhancerUI(options) {
-  return new PromptEnhancerUI(options);
+// Factory helper
+function createPromptEnhancerUI(opts) {
+  return new PromptEnhancerUI(opts);
 }
 
-module.exports = {
-  PromptEnhancerUI,
-  createPromptEnhancerUI
-};
+// Expose for Node-RED browser runtime
+if (typeof RED !== 'undefined') {
+  RED.nodes.PromptEnhancerUI = PromptEnhancerUI;
+} else if (typeof window !== 'undefined') {
+  window.PromptEnhancerUI = PromptEnhancerUI;
+}
+
+// CommonJS (unit tests, Jest, etc.)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    PromptEnhancerUI,
+    createPromptEnhancerUI
+  };
+}

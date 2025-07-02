@@ -45,7 +45,7 @@ describe('LLM Config Node Helpers', () => {
       const config = { provider: 'azure' };
       const credentials = { apiKey: 'test-key' };
       
-      expect(() => validateConfig(config, credentials)).toThrow('API Key and Endpoint are required for Azure OpenAI');
+      expect(() => validateConfig(config, credentials)).toThrow('API Key and Base URL are required for Azure OpenAI');
     });
   });
 
@@ -59,13 +59,13 @@ describe('LLM Config Node Helpers', () => {
     });
 
     test('should normalize endpoint URLs', () => {
-      const config = { 
+      const config = {
         provider: 'custom',
-        endpoint: 'https://api.example.com/'
+        baseUrl: 'https://api.example.com/'
       };
       
       const normalized = normalizeConfig(config);
-      expect(normalized.endpoint).toBe('https://api.example.com');
+      expect(normalized.baseUrl).toBe('https://api.example.com');
     });
   });
 
@@ -127,7 +127,10 @@ describe('LLM Config Node', () => {
       'llm-config',
       expect.any(Function),
       {
-        credentials: expect.any(Object)
+        credentials: {
+          apiKey: { type: 'password' },
+          apiSecret: { type: 'password' }
+        }
       }
     );
   });

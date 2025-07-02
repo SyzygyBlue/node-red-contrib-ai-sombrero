@@ -235,6 +235,13 @@ function createTestNode(RED, NodeConstructor, config) {
     console.log(`[test-utils] Calling RED.nodes.createNode for ${node.id}`);
     RED.nodes.createNode(node, config);
     
+    // Find the NodeConstructor from the mocked RED.nodes.registerType calls
+    const registerTypeCall = RED.nodes.registerType.mock.calls.find(call => call[0] === node.type);
+    if (!registerTypeCall) {
+      throw new Error(`Node type ${node.type} not registered with RED.nodes.registerType`);
+    }
+    const NodeConstructor = registerTypeCall[1];
+
     // Call the NodeConstructor
     console.log(`[test-utils] Calling NodeConstructor for ${node.id}`);
     NodeConstructor.call(node, config);

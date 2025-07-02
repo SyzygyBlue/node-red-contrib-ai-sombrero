@@ -59,10 +59,11 @@ jest.mock('../../../nodes/mcp-node/lib/routing-service', () => ({
 const routingServiceMock = require('../../../nodes/mcp-node/lib/routing-service');
 
 // Mock the audit service
-jest.mock('services/audit-service', () => ({
-  log: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn()
+jest.mock('../../../services/audit-service', () => ({
+  logger: {
+    log: jest.fn(),
+    error: jest.fn(),
+  }
 }));
 
 // Mock the UI handler

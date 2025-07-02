@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-ai-sombrero",
-  "version": "0.2.2",
+  "version": "0.2.7",
   "description": "AI Workflow Orchestration for Node-RED",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,12 @@
       "llm-config": "nodes/llm-config/llm-config.js",
       "llm-connector": "nodes/llm-connector/llm-connector.js",
       "mcp-node": "nodes/mcp-node/mcp-node.js",
-      "dbconfig-node": "nodes/dbconfig-node/dbconfig.js"
+      "dbconfig-node": "nodes/dbconfig-node/dbconfig.js",
+      "role-manager": "nodes/shared/role-manager/index.js"
+    },
+    "resources": {
+      "shared/role-manager/ui.js": "nodes/shared/role-manager/ui.js",
+      "shared/ui/prompt-enhancer-ui.js": "shared/ui/prompt-enhancer-ui.js"
     }
   },
   "keywords": [
