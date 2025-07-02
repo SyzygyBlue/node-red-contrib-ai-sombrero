@@ -9,6 +9,7 @@ module.exports = function (RED) {
   const roleHelper = require('./llm-connector-role-based-helper');
   const roleApi = require('./role-api')(RED);
   const dbConfigUtils = require('../shared/db-config-utils')(RED);
+  const { handleJob } = require('./llm-connector-job-helper')(RED);
 
   function LLMConnectorNode(config) {
     RED.nodes.createNode(this, config);
@@ -65,8 +66,11 @@ module.exports = function (RED) {
         // Process the message through the LLM
         const result = await processMessage(normalizedMsg, this);
 
+        // Persist job/unit data and enrich envelope
+        const finalResult = await handleJob(this, msg, result);
+
         // Send the result to the first output
-        _send([result, null]);
+        _send([finalResult, null]);
 
         // Update status
         this.status({ fill: 'green', shape: 'dot', text: 'Success' });
