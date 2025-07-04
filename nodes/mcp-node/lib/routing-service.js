@@ -23,6 +23,11 @@ const { createPromptEnhancer } = require('../../../shared/prompt-enhancer');
  * @returns {Object} The routing service instance
  */
 function createRoutingService(options) {
+    // Determine routing mode from options or node instance
+    const routingMode = (options && options.routingMode) || (options.node && options.node.routingMode) || "rule";
+    const fallbackOutput = (options && options.fallbackOutput !== undefined) ? options.fallbackOutput : (options.node && options.node.fallbackOutput);
+
+
     const {
         node,
         RED,
@@ -70,15 +75,17 @@ function createRoutingService(options) {
         // Process each rule
         for (let i = 0; i < rules.length; i++) {
             const rule = rules[i];
+            const ruleType = rule.type || "simple";
+            const outputIdx = (rule.output !== undefined && rule.output !== null) ? rule.output : i; // default: rule position
             let ruleMatched = false;
 
             try {
                 // Evaluate the rule condition
-                if (rule.type === "jsonata") {
+                if (ruleType === "jsonata") {
                     // JSONata expression evaluation
                     const expression = RED.util.prepareJSONataExpression(rule.condition, node);
                     ruleMatched = RED.util.evaluateJSONataExpression(expression, msg);
-                } else if (rule.type === "javascript") {
+                } else if (ruleType === "javascript") {
                     // JavaScript function evaluation (with sandbox)
                     const sandbox = {
                         msg: RED.util.cloneMessage(msg),
@@ -101,7 +108,7 @@ function createRoutingService(options) {
                         node.warn(`Error evaluating rule ${i+1}: ${err.message}`);
                         ruleMatched = false;
                     }
-                } else if (rule.type === "simple") {
+                } else if (ruleType === "simple") {
                     // Simple property comparison
                     const property = RED.util.getMessageProperty(msg, rule.property);
                     const value = rule.value;
@@ -119,10 +126,10 @@ function createRoutingService(options) {
                     }
                 }
 
-                // If rule matched and has a valid output, add it to selected outputs
-                if (ruleMatched && rule.output >= 0 && rule.output < outputLabels.length) {
+                // If the rule matched, add to selected outputs
+                if (ruleMatched) {
                     selectedOutputs.push({
-                        index: rule.output,
+                        index: outputIdx,
                         msg: RED.util.cloneMessage(msg),
                         rule: i,
                         priority: rule.priority || 0
@@ -133,11 +140,11 @@ function createRoutingService(options) {
                 if (debugMode) {
                     debugInfo.ruleEvaluations.push({
                         ruleIndex: i,
-                        ruleType: rule.type,
+                        ruleType: ruleType,
                         condition: rule.condition,
                         matched: ruleMatched,
-                        output: rule.output,
-                        outputLabel: outputLabels[rule.output] || `Output ${rule.output}`
+                        output: outputIdx,
+                        outputLabel: outputLabels[outputIdx] || `Output ${outputIdx}`
                     });
                 }
             } catch (error) {
@@ -154,6 +161,10 @@ function createRoutingService(options) {
         }
 
         debugInfo.executionTime = Date.now() - startTime;
+        
+        if (debugMode && node && typeof node.warn === "function") {
+            node.warn(`[MCP debug] Rule results -> ${JSON.stringify(debugInfo.ruleEvaluations)}`);
+        }
         
         return {
             outputs: selectedOutputs,
@@ -235,7 +246,22 @@ Example: { "outputs": [0, 2] }`;
                 }
                 
                 // Extract outputs array
-                if (parsedResponse && Array.isArray(parsedResponse.outputs)) {
+                if (parsedResponse && Array.isArray(parsedResponse.labels)) {
+                    const decisionMap = {};
+                    node.aiLabelList.forEach(label => {
+                        decisionMap[label] = false;
+                    });
+                    parsedResponse.labels.forEach(l => {
+                        if (decisionMap.hasOwnProperty(l)) {
+                            decisionMap[l] = true;
+                        }
+                    });
+                    msg.aiDecisionMap = decisionMap;
+                    // No direct outputs; rely on downstream switch. Keep selectedOutputs empty.
+                    if(debugMode){ debugInfo.aiDecisionMap = decisionMap; }
+                }
+                else if (Array.isArray(parsedResponse.outputs)) {
+                    // legacy numeric index response
                     selectedOutputs = parsedResponse.outputs
                         .filter(output => Number.isInteger(output) && output >= 0 && output < outputLabels.length)
                         .map(output => ({
@@ -244,7 +270,6 @@ Example: { "outputs": [0, 2] }`;
                             source: 'ai',
                             priority: 10 // AI decisions get higher priority by default
                         }));
-                    
                     if (debugMode) {
                         debugInfo.parsedOutputs = selectedOutputs.map(o => ({
                             index: o.index,
@@ -292,28 +317,28 @@ Example: { "outputs": [0, 2] }`;
             outputs: [],
             debug: {},
             decision: {
-                mode: options.routingMode,
+                mode: routingMode,
                 timestamp: new Date().toISOString()
             },
             executionTime: 0
         };
 
         try {
-            if (options.routingMode === "rule") {
+            if (routingMode === "rule") {
                 // Rule-based routing only
                 const ruleResult = await evaluateRules(msg);
                 result.outputs = ruleResult.outputs;
                 result.debug.rules = ruleResult.debug;
                 result.decision.source = "rules";
             } 
-            else if (options.routingMode === "ai") {
+            else if (routingMode === "ai") {
                 // AI-based routing only
                 const aiResult = await performAIRouting(msg);
                 result.outputs = aiResult.outputs;
                 result.debug.ai = aiResult.debug;
                 result.decision.source = "ai";
             }
-            else if (options.routingMode === "hybrid") {
+            else if (routingMode === "hybrid") {
                 // Hybrid routing (both rule and AI)
                 const [ruleResult, aiResult] = await Promise.all([
                     evaluateRules(msg),
@@ -333,9 +358,9 @@ Example: { "outputs": [0, 2] }`;
             }
             
             // Apply fallback if no outputs were selected
-            if (result.outputs.length === 0 && options.fallbackOutput !== undefined) {
+            if (result.outputs.length === 0 && fallbackOutput !== undefined) {
                 result.outputs.push({
-                    index: options.fallbackOutput,
+                    index: fallbackOutput,
                     msg: RED.util.cloneMessage(msg),
                     source: 'fallback'
                 });

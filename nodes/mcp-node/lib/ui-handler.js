@@ -104,16 +104,29 @@ module.exports = function(RED) {
                 
                 // Create LLM provider function using the LLM config node
                 const llmProvider = async ({ prompt, ...options }) => {
-                    return new Promise((resolve, reject) => {
-                        llmConfigNode.sendPrompt(prompt, options, (err, response) => {
-                            if (err) return reject(err);
-                            resolve({ text: response.text });
+                    // Prefer modern async API
+                    if (typeof llmConfigNode.callLLM === 'function') {
+                        const resp = await llmConfigNode.callLLM({ prompt, ...options });
+                        return { text: resp.text || resp.choices?.[0]?.text || JSON.stringify(resp) };
+                    }
+                    // Fallback to legacy callback style
+                    if (typeof llmConfigNode.sendPrompt === 'function') {
+                        return await new Promise((resolve, reject) => {
+                            llmConfigNode.sendPrompt(prompt, options, (err, response) => {
+                                if (err) return reject(err);
+                                resolve({ text: response.text });
+                            });
                         });
-                    });
+                    }
+                    // Final fallback: echo prompt
+                    return { text: prompt };
                 };
                 
                 // Create enhancer with the LLM provider
-                const enhancer = promptEnhancer.createPromptEnhancer(llmProvider);
+                const enhancer = promptEnhancer.createPromptEnhancer({
+                    llmProvider,
+                    context: context || 'mcpNode'
+                });
                 
                 // Add context if provided
                 const enhancerWithContext = context ? 

@@ -15,6 +15,7 @@
             rules: { value: [] },
             aiPromptTemplate: { value: "" },
             outputLabels: { value: [] },
+            aiLabelList: { value: [] },
             debugMode: { value: false },
             llmConfig: { value: "", type: "llm-config", required: true },
             dbConfig: { value: "", type: "dbconfig-node", required: false }
@@ -66,6 +67,7 @@
             this.outputLabels = data.outputLabels || [];
             this.rules = data.rules || [];
             this.aiPromptTemplate = data.aiPromptTemplate || '';
+            this.aiLabelList = data.aiLabelList || this.aiLabelList || [];
 
             this.routingMode = $('#node-input-routingMode').val(); // legacy
             this.matchMode = $('#node-input-matchMode').val();

@@ -129,7 +129,12 @@ function evaluateRules(msg, rules, RED, node) {
                 matched = sandbox.result === true;
             } else if (rule.type === 'simple') {
                 // Simple property comparison
-                const property = RED.util.getMessageProperty(msg, rule.property);
+                let propertyPath = rule.property;
+                if(rule.source === 'ai'){
+                    // Ensure we look inside msg.aiDecisionMap
+                    propertyPath = `aiDecisionMap.${rule.property}`;
+                }
+                const property = RED.util.getMessageProperty(msg, propertyPath);
                 
                 switch (rule.operator) {
                     case 'eq': matched = property == rule.value; break;

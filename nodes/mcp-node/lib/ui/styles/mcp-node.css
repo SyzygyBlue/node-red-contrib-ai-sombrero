@@ -161,6 +161,29 @@
     background-color: #5bc0de;
 }
 
+/* Rules editor specific styles */
+.mcp-rule-row2{
+    display:flex;
+    align-items:center;
+    margin-top:4px;
+}
+/* make typedInput container fill remaining space */
+.mcp-rule-row2 .red-ui-typedInput-container{
+    flex:1 1 auto;
+    min-width:0; /* allow shrinking */
+}
+/* keep the dropdown pill compact like core switch */
+.mcp-rule-row2 .red-ui-typedInput-type-select{
+    min-width:90px;
+}
+/* label input pushed to right with small margin */
+.mcp-rule-row2 select.mcp-property-select{flex:1 1 auto;min-width:160px;}
+.mcp-rule-row2 input.mcp-label{
+    flex:0 0 140px;
+    max-width:140px;
+    margin-left:8px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     #mcp-node-tabs {

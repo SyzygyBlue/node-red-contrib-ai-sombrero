@@ -19,8 +19,16 @@
 
 <script type="text/javascript">
 (function() {
-    window.mcpNodeInitAdvanced = function() {
-        const node = RED.nodes.node(RED.editor.activeNode.id);
+    window.mcpNodeInitAdvanced = function mcpNodeInitAdvanced() {
+        let node = window.mcpNodeCurrentNode;
+        if (!node && RED.editor && RED.editor.activeNode) {
+            node = RED.nodes.node(RED.editor.activeNode.id);
+        }
+        if (!node) {
+            setTimeout(mcpNodeInitAdvanced, 50);
+            return;
+        }
+        
         $("#advanced-debugMode").prop("checked", node.debugMode || false);
         $("#advanced-temperature").val(typeof node.temperature === 'number' ? node.temperature : 0.7);
     };

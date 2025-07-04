@@ -4,6 +4,13 @@
         <div class="form-tips">Configure how AI makes routing decisions</div>
     </div>
     
+    <!-- AI Result Map -->
+    <div class="form-row">
+        <label><i class="fa fa-random"></i> AI Result Map</label>
+        <div id="mcp-ai-result-map" style="width:100%; margin:5px 0;"></div>
+        <a href="#" id="mcp-add-result" class="editor-button editor-button-small"><i class="fa fa-plus"></i> Add Label</a>
+    </div>
+    
     <div class="form-row">
         <label for="mcp-ai-prompt">Prompt Template</label>
         <div class="node-text-editor" id="mcp-ai-prompt-editor" style="height: 200px; min-height: 200px;"></div>
@@ -31,6 +38,11 @@
         <span id="mcp-ai-temperature-value">0.3</span>
         <div class="form-tips">Lower values make decisions more consistent, higher values more creative</div>
     </div>
+
+    <div class="form-row">
+        <label><i class="fa fa-list"></i> AI Result IDs</label>
+        <div id="mcp-ai-result-ids" style="padding-left:10px; font-family:monospace;"></div>
+    </div>
 </div>
 
 <script type="text/javascript">
@@ -50,9 +62,16 @@ Respond with a JSON object that contains an "outputs" array with the indices of 
 Example: { "outputs": [0, 2] }`;
         
         // Initialize the AI routing editor
-        window.mcpNodeInitAI = function() {
+        window.mcpNodeInitAI = function mcpNodeInitAI() {
+            let node = window.mcpNodeCurrentNode;
+            if (!node && RED.editor && RED.editor.activeNode) {
+                node = RED.nodes.node(RED.editor.activeNode.id);
+            }
+            if (!node) {
+                setTimeout(mcpNodeInitAI, 50);
+                return;
+            }
             // Get AI prompt from node configuration
-            const node = RED.nodes.node(RED.editor.activeNode.id);
             const aiPrompt = node.aiPromptTemplate || defaultPrompt;
             
             // Initialize prompt editor
@@ -60,7 +79,37 @@ Example: { "outputs": [0, 2] }`;
             
             // Setup event handlers
             setupEventHandlers();
+            initResultMap(node);
+            renderAiResultIds(node.aiLabelList || []);
         };
+        
+        // Helpers for AI Result Map -----------------
+        function initResultMap(node){
+            const list = node.aiLabelList || [];
+            const $container = $('#mcp-ai-result-map');
+            $container.empty();
+            list.forEach(label=>appendResultRow(label));
+            $(document).trigger('aiLabelListChanged', [collectMap()]);
+        }
+        
+        function appendResultRow(label){
+            const $row = $('<div class="ai-map-row" style="display:flex; gap:5px; align-items:center; margin-bottom:4px;"></div>');
+            const $labelInput = $('<input type="text" placeholder="label / regex" style="flex:1;">').val(label||'');
+            const $del = $('<a href="#" title="remove"><i class="fa fa-trash"></i></a>').click(function(e){ e.preventDefault(); $row.remove(); renderAiResultIds(collectMap()); $(document).trigger('aiLabelListChanged', [collectMap()]);});
+            $labelInput.on('input', function(){ $(document).trigger('aiLabelListChanged', [collectMap()]); });
+            $row.append($labelInput, $del).appendTo('#mcp-ai-result-map');
+            $(document).trigger('aiLabelListChanged', [collectMap()]);
+        }
+        function collectMap(){
+            const labels=[];
+            $('#mcp-ai-result-map .ai-map-row input').each(function(){
+                const label=$(this).val().trim();
+                if(label) labels.push(label);
+            });
+            return labels;
+        }
+        // expose getters to editor.js
+        window.mcpNodeGetAiLabelList=function(){return collectMap();};
         
         // Initialize the prompt editor
         function initPromptEditor(value) {
@@ -77,6 +126,13 @@ Example: { "outputs": [0, 2] }`;
         
         // Setup event handlers
         function setupEventHandlers() {
+            // Add mapping row
+            $('#mcp-add-result').click(function(e){
+                e.preventDefault();
+                appendResultRow('');
+                $(document).trigger('aiLabelListChanged', [collectMap()]);
+            });
+        
             // Temperature slider
             $("#mcp-ai-temperature").on('input', function() {
                 const value = $(this).val() / 10;
@@ -150,6 +206,18 @@ Example: { "outputs": [0, 2] }`;
             return aiPromptEditor ? aiPromptEditor.getValue() : "";
         };
         
+        function renderAiResultIds(list){
+            const $target = $('#mcp-ai-result-ids');
+            $target.empty();
+            if(!Array.isArray(list) || !list.length){
+                $target.text('(none configured)');
+                return;
+            }
+            list.forEach((row, idx)=>{
+                $('<div>').text(`${row.label} — ${idx}`).appendTo($target);
+            });
+        }
+
         // Resize handler
         window.mcpNodeResizeAI = function() {
             if (aiPromptEditor) {

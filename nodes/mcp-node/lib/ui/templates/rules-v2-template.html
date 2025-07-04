@@ -32,24 +32,86 @@
         {v:"regex",l:"matches regex"}, {v:"ai_option",l:"is AI option"}
     ];
 
+    const VALUE_TYPE_OPTIONS = [
+        {v:"str",l:"string"}, {v:"num",l:"number"}, {v:"bool",l:"boolean"},
+        {v:"jsonata",l:"expression"}, {v:"env",l:"env variable"}, {v:"prev",l:"previous value"}
+    ];
+
+    function getAiLabels() {
+        if (typeof window.mcpNodeGetAiLabelList === 'function') {
+            return window.mcpNodeGetAiLabelList();
+        }
+        const node = window.mcpNodeCurrentNode || (RED.editor && RED.editor.activeNode ? RED.nodes.node(RED.editor.activeNode.id) : null);
+        return (node && Array.isArray(node.aiLabelList)) ? node.aiLabelList : [];
+    }
+    
+    function updatePropertyField($li) {
+        const src = $li.find('.mcp-source').val();
+        const $text = $li.find('.mcp-property');
+        let $select = $li.find('.mcp-property-select');
+        if (src === 'ai') {
+            if ($select.length === 0) {
+                $select = $('<select class="mcp-property-select"></select>').insertAfter($text);
+            }
+            const opts = getAiLabels();
+            $select.empty();
+            opts.forEach(l => $select.append(`<option value="${l}">${l}</option>`));
+            // Ensure dropdown reflects hidden text value and vice versa
+            $select.off('change.ai').on('change.ai', function(){
+                const val = $(this).val();
+                $text.val(val);
+                const index = $li.data('index');
+                if(rules[index]) rules[index].property = val;
+                $text.trigger('change'); // propagate to save handler
+            });
+            const currentVal = $text.val();
+            $select.val(currentVal);
+            $text.hide();
+            $select.show();
+            // Force boolean true comparison, hide value input
+            $li.find('.mcp-operator').val('eq');
+            const $valInput = $li.find('.mcp-value');
+            $valInput.typedInput('type', 'bool');
+            $valInput.typedInput('value', true);
+            $valInput.hide();
+        } else {
+            if ($select.length) $select.hide();
+            $text.show();
+            // Show value input again
+            const $valInput=$li.find('.mcp-value');
+            $valInput.show();
+        }
+    }
+
     function createBlankRule() {
         return {
             source: "msg",
             property: "payload",
             operator: "eq",
+            valueType: "str",
             value: "",
             label: ""
         };
     }
 
     // Called by editor.js after it loads this template
-    window.mcpNodeInitRules = function () {
-        const node = RED.nodes.node(RED.editor.activeNode.id);
+    window.mcpNodeInitRules = function mcpNodeInitRules() {
+        if (!window.mcpNodeCurrentNode && (!RED.editor || !RED.editor.activeNode)) {
+            // Wait until Node-RED has set activeNode
+            setTimeout(mcpNodeInitRules, 50);
+            return;
+        }
+        const node = window.mcpNodeCurrentNode || (RED.editor && RED.editor.activeNode ? RED.nodes.node(RED.editor.activeNode.id) : null);
+        if (!node) return;
         rules = (node.rules && Array.isArray(node.rules)) ? JSON.parse(JSON.stringify(node.rules)) : [];
         if (rules.length === 0) rules.push(createBlankRule());
         renderRules();
         attachHandlers();
         initSortable();
+        // Listen for AI label list changes from AI tab
+        $(document).on('aiLabelListChanged', function(){
+            $("#mcp-rules-list li").each(function(){ updatePropertyField($(this)); });
+        });
     };
 
     function attachHandlers() {
@@ -82,22 +144,58 @@
             // Populate selects
             SOURCE_OPTIONS.forEach(opt => $li.find('.mcp-source').append(`<option value="${opt.v}">${opt.l}</option>`));
             OPERATOR_OPTIONS.forEach(opt => $li.find('.mcp-operator').append(`<option value="${opt.v}">${opt.l}</option>`));
+            
+            const $valInput = $li.find('.mcp-value');
+            $valInput.typedInput({
+                default: rule.valueType || 'str',
+                types: [
+                    {value:'msg',label:'msg.'},
+                    {value:'flow',label:'flow.'},
+                    {value:'global',label:'global.'},
+                    {value:'str',label:'string'},
+                    {value:'num',label:'number'},
+                    {value:'bool',label:'boolean'},
+                    {value:'jsonata',label:'expression'},
+                    {value:'env',label:'env var'},
+                    {value:'prev',label:'previous value'}
+                ]
+            });
 
             // Set values
             $li.find('.mcp-source').val(rule.source);
             $li.find('.mcp-property').val(rule.property);
             $li.find('.mcp-operator').val(rule.operator);
+             $li.find('.mcp-value').typedInput('type', rule.valueType || 'str');
+            $li.find('.mcp-value').typedInput('value', rule.value);
             $li.find('.mcp-value').val(rule.value);
             $li.find('.mcp-label').val(rule.label);
+            // initial property field mode
+            updatePropertyField($li);
 
             // Change handlers
             $li.find('select, input').on('change keyup', function () {
+                // if source or label changed, may need to refresh property select lists
+                if ($(this).hasClass('mcp-source') || $(this).hasClass('mcp-label')) {
+                    updatePropertyField($li);
+                    // refresh other rows in case labels list updated
+                    $("#mcp-rules-list li").each(function(){ updatePropertyField($(this)); });
+                }
                 const rIdx = $li.data('index');
                 const r = rules[rIdx];
                 r.source = $li.find('.mcp-source').val();
-                r.property = $li.find('.mcp-property').val();
+                const currentSrc = r.source;
+                if(currentSrc==='ai'){
+                    // pick from select and sync hidden input
+                    const selVal = $li.find('.mcp-property-select').val();
+                    r.property = selVal;
+                    $li.find('.mcp-property').val(selVal);
+                } else {
+                    r.property = $li.find('.mcp-property').val();
+                }
                 r.operator = $li.find('.mcp-operator').val();
-                r.value = $li.find('.mcp-value').val();
+                 const $valInput = $li.find('.mcp-value');
+                r.valueType = $valInput.typedInput('type');
+                r.value = $valInput.typedInput('value');
                 r.label = $li.find('.mcp-label').val();
                 syncOutputLabels();
             });
@@ -133,13 +231,25 @@
     }
 
     function syncOutputLabels() {
-        const node = RED.nodes.node(RED.editor.activeNode.id);
+        const node = window.mcpNodeCurrentNode || (RED.editor && RED.editor.activeNode ? RED.nodes.node(RED.editor.activeNode.id) : null);
+        if (!node) return;
         node.outputLabels = node.outputLabels || [];
-        while (node.outputLabels.length < rules.length) {
-            node.outputLabels.push("Output " + (node.outputLabels.length + 1));
-        }
-        if (node.outputLabels.length > rules.length) {
+        // Ensure array length matches
+        if (node.outputLabels.length < rules.length) {
+            while (node.outputLabels.length < rules.length) {
+                node.outputLabels.push("");
+            }
+        } else if (node.outputLabels.length > rules.length) {
             node.outputLabels = node.outputLabels.slice(0, rules.length);
+        }
+        // Sync labels from rules
+        rules.forEach((r, idx)=>{
+            node.outputLabels[idx] = r.label || "";
+        });
+        // Sync outputs count
+        node.outputs = rules.length || 1;
+        if (RED && RED.view) {
+            RED.view.redraw(true);
         }
     }
 

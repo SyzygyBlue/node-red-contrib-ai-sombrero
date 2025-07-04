@@ -1,0 +1,28 @@
+{{!--
+  Template: mcpNode.hbs
+  Purpose : Shape the final prompt sent by the MCP node so that the downstream LLM reliably
+            returns routing decisions in strict JSON format expected by the routing engine.
+
+  Inputs available to this template (injected by prompt-enhancer):
+    • original      – The existing prompt assembled by the MCP node (contains message & outputs list)
+    • instructions  – Extra user-supplied instructions (optional)
+
+  Output: The fully-formed prompt string. Keep it compact but absolutely clear. Do **not** include
+  markdown or commentary in the rendered output (it will be sent verbatim to the LLM).
+--}}
+You are a senior prompt engineer. Rewrite the ORIGINAL PROMPT below so that it:
+1. Instructs the downstream LLM to output ONLY a JSON object in the form
+   {"outputs": [<int indices>], "confidence": <0-1>, "reasoning": "<brief>"}.
+2. Prohibits markdown or extra commentary.
+3. Keeps any variable placeholders such as {{outputs}} and {{message}} intact.
+4. Incorporates any additional user instructions provided.
+
+Return ONLY the improved prompt text—no code fences, no JSON, no explanation.
+
+{{#if instructions}}
+User instructions to weave in:
+{{instructions}}
+{{/if}}
+
+----- ORIGINAL PROMPT -----
+{{original}}

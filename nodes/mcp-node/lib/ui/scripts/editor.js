@@ -87,7 +87,8 @@
     window.mcpNodeSaveData = function() {
         const data = {
             rules: [],
-            outputLabels: []
+            outputLabels: [],
+            aiLabelList: []
         };
         
         // Collect data from rules tab
@@ -96,12 +97,18 @@
         }
         
         // output labels are already synced by rules editor
-        const node = RED.nodes.node(RED.editor.activeNode.id);
+        const node = window.mcpNodeCurrentNode || (RED.editor && RED.editor.activeNode ? RED.nodes.node(RED.editor.activeNode.id) : null);
+        if (node){
         data.outputLabels = node.outputLabels || [];
+        }
         
                 // AI prompt
         if (typeof window.mcpNodeGetAIPrompt==='function') {
             data.aiPromptTemplate = window.mcpNodeGetAIPrompt();
+        }
+            // Collect data from AI tab if available
+        if (typeof window.mcpNodeGetAiLabelList === 'function') {
+            data.aiLabelList = window.mcpNodeGetAiLabelList();
         }
         return data;
     };

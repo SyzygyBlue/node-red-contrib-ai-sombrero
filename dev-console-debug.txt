@@ -2,60 +2,11 @@ vendor.js?v=44ce7adc1044:4 JQMIGRATE: Migrate is installed, version 3.3.0
 red.min.js?v=44ce7adc1044:16 Node-RED: 4.0.9
 red.min.js?v=44ce7adc1044:16 Versions
 red.min.js?v=44ce7adc1044:16 Projects disabled
-VM5882:33 oneditprepare - Initial node values: {llmConfig: '45d69bf6026d1b3f', dbConfig: '79d9fdc98e4a06ed', nodeId: 'b9fc0b5b9c3d8387', _config: 'exists'}
-VM5882:56 oneditprepare - After initialization: {llmConfigValue: '45d69bf6026d1b3f', dbConfigValue: '79d9fdc98e4a06ed'}
-VM5882:64 oneditprepare - After init dbConfig value: 79d9fdc98e4a06ed
-VM5882:79 Attempting to instantiate RED.nodes.RoleManagerUI
-VM5882:80 dbConfigNodeId: 79d9fdc98e4a06ed
-4600.vendors.chunk.js:1 <Item> with non-plain text contents is unsupported by type to select for accessibility. Please add a `textValue` prop.
-o.getCollectionNode @ 4600.vendors.chunk.js:1
-getFullNode @ 4600.vendors.chunk.js:1
-iterateCollection @ 4600.vendors.chunk.js:1
-[Symbol.iterator] @ 4600.vendors.chunk.js:1
-bn @ 1327.vendors.chunk.js:1
-(anonymous) @ 1327.vendors.chunk.js:1
-(anonymous) @ 4600.vendors.chunk.js:1
-useMemo @ Grammarly.js:2
-t.useMemo @ Grammarly.js:2
-a @ 4600.vendors.chunk.js:1
-hn @ 1327.vendors.chunk.js:1
-t @ 1327.vendors.chunk.js:1
-as @ Grammarly.js:2
-Ka @ Grammarly.js:2
-Rl @ Grammarly.js:2
-Al @ Grammarly.js:2
-Tl @ Grammarly.js:2
-bl @ Grammarly.js:2
-(anonymous) @ Grammarly.js:2
-t.unstable_runWithPriority @ Grammarly.js:2
-$r @ Grammarly.js:2
-Yr @ Grammarly.js:2
-L @ Grammarly.js:2
-y.port1.onmessage @ Grammarly.js:2
-1327.vendors.chunk.js:1 An aria-label or aria-labelledby prop is required for accessibility.
-_t @ 1327.vendors.chunk.js:1
-t @ 1327.vendors.chunk.js:1
-as @ Grammarly.js:2
-Ka @ Grammarly.js:2
-Rl @ Grammarly.js:2
-Al @ Grammarly.js:2
-Tl @ Grammarly.js:2
-bl @ Grammarly.js:2
-(anonymous) @ Grammarly.js:2
-t.unstable_runWithPriority @ Grammarly.js:2
-$r @ Grammarly.js:2
-Yr @ Grammarly.js:2
-L @ Grammarly.js:2
-y.port1.onmessage @ Grammarly.js:2
-ui.js:213 
-            
-            
-           POST http://localhost:1880/ai-sombrero/enhance-role 400 (Bad Request)
-handleEnhance @ ui.js:213
-(anonymous) @ ui.js:112
-ui.js:213 
-            
-            
-           POST http://localhost:1880/ai-sombrero/enhance-role 400 (Bad Request)
-handleEnhance @ ui.js:213
-(anonymous) @ ui.js:112
+frame.bundle.js:50 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'selectedText')
+    at c (frame.bundle.js:50:103953)
+c @ frame.bundle.js:50
+await in c
+(anonymous) @ frame.bundle.js:50
+setTimeout
+T @ frame.bundle.js:50
+(anonymous) @ frame.bundle.js:50
