@@ -10,6 +10,8 @@
         defaults: {
             name: { value: "" },
             routingMode: { value: "rule" },
+            matchMode: { value: "first" },
+            temperature: { value: 0.7 },
             rules: { value: [] },
             aiPromptTemplate: { value: "" },
             outputLabels: { value: [] },
@@ -18,11 +20,15 @@
             dbConfig: { value: "", type: "dbconfig-node", required: false }
         },
         inputs: 1,
-        outputs: 0,
+        outputs: 1,
 
         oneditprepare: function() {
             // Load external editor scripts
-            $.getScript('mcp-node/lib/ui/scripts/editor.js');
+            $.getScript('/mcp-node/ui/editor.js');
+
+            // Pre-fill fields
+            $('#node-input-routingMode').val(this.routingMode || 'rule'); // hidden legacy
+            $('#node-input-matchMode').val(this.matchMode || 'first');
 
             // Initialize LLM & DB config dropdowns
             RED.nodes.config.init({
@@ -35,6 +41,22 @@
                 type: 'dbconfig-node',
                 required: false
             });
+        },
+
+        oneditsave: function() {
+            const data = window.mcpNodeSaveData ? window.mcpNodeSaveData() : {};
+
+            this.outputLabels = data.outputLabels || [];
+            this.rules = data.rules || [];
+            this.aiPromptTemplate = data.aiPromptTemplate || '';
+
+            this.routingMode = $('#node-input-routingMode').val(); // legacy
+            this.matchMode = $('#node-input-matchMode').val();
+            this.debugMode = $('#advanced-debugMode').prop('checked');
+            this.temperature = parseFloat($('#advanced-temperature').val()) || 0.7;
+
+            // Update dynamic outputs count to match rules/labels
+            this.outputs = this.outputLabels.length || 1;
         }
     });
 </script>
@@ -54,10 +76,35 @@
         <input type="text" id="node-input-dbConfig" placeholder="Select Database Configuration">
     </div>
 
-    <!-- Placeholder for new sub-screen triggers -->
+    <div class="form-row" style="display:none">
+        <label for="node-input-routingMode"><i class="fa fa-random"></i> Routing Mode</label>
+        <select id="node-input-routingMode" style="width:70%">
+            <option value="rule">Rule</option>
+            <option value="ai">AI</option>
+            <option value="hybrid">Hybrid</option>
+        </select>
+    </div>
     <div class="form-row">
-        <button type="button" id="node-input-edit-rules">Edit Rules</button>
-        <button type="button" id="node-input-edit-ai">Edit AI Settings</button>
+        <label for="node-input-matchMode"><i class="fa fa-exchange"></i> Match Mode</label>
+        <select id="node-input-matchMode" style="width:70%">
+            <option value="first">Stop at first match</option>
+            <option value="all">Send all matches</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="mcp-ai-template-name"><i class="fa fa-brain"></i> AI Routing Template</label>
+        <input type="text" id="mcp-ai-template-name" style="width:70%" readonly>
+        <a href="#" id="mcp-ai-edit" class="editor-button editor-button-small"><i class="fa fa-search"></i></a>
+    </div>
+    <div class="form-row" id="mcp-ai-container" style="display:none; width:100%; margin-bottom:10px;"></div>
+
+    <div class="form-row">
+        <div id="mcp-rules-container" style="width:100%;"></div>
+    </div>
+    <div class="form-row">
+        <a href="#" id="advanced-toggle" class="editor-button"><i class="fa fa-cog"></i> Advanced Options...</a>
+        <div id="mcp-advanced-container" style="display:none; width:100%; margin-top:10px;"></div>
     </div>
 
 </script>

@@ -1,0 +1,151 @@
+<!-- MCP Rules Editor (Switch-style) -->
+<style>
+    /* Minimal styling; Node-RED will supply most styles */
+    .mcp-rules-list { list-style: none; margin: 0; padding: 0; }
+    .mcp-rule-item { border: 1px solid var(--red-ui-form-input-border-color,#ccc); border-radius: 4px; margin-bottom: 6px; padding: 4px 6px; background: var(--red-ui-form-input-background,#fff); }
+    .mcp-rule-row1, .mcp-rule-row2 { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+    .mcp-rule-row2 { margin-bottom: 0; }
+    .mcp-drag-handle { cursor: move; width: 18px; color: #888; }
+    .mcp-rule-item input[type="text"] { width: 110px; }
+    .mcp-rule-item input.mcp-property { width: 160px; }
+    .mcp-rule-item input.mcp-value { flex: 1 1 auto; min-width: 160px; }
+    .mcp-rule-item input.mcp-label { width: 80px; }
+</style>
+
+<div>
+    <ul id="mcp-rules-list" class="mcp-rules-list"></ul>
+    <a href="#" class="editor-button editor-button-small" id="mcp-add-rule"><i class="fa fa-plus"></i> Add Rule</a>
+</div>
+
+<script type="text/javascript">
+(function() {
+    let rules = [];
+
+    const SOURCE_OPTIONS = [
+        {v:"msg",l:"msg"}, {v:"flow",l:"flow"}, {v:"global",l:"global"},
+        {v:"env",l:"env"}, {v:"jsonata",l:"JSONata"}, {v:"ai",l:"AI Result"}
+    ];
+
+    const OPERATOR_OPTIONS = [
+        {v:"eq",l:"=="}, {v:"neq",l:"!="}, {v:"lt",l:"<"}, {v:"lte",l:"<="},
+        {v:"gt",l:">"}, {v:"gte",l:">="}, {v:"contains",l:"contains"},
+        {v:"regex",l:"matches regex"}, {v:"ai_option",l:"is AI option"}
+    ];
+
+    function createBlankRule() {
+        return {
+            source: "msg",
+            property: "payload",
+            operator: "eq",
+            value: "",
+            label: ""
+        };
+    }
+
+    // Called by editor.js after it loads this template
+    window.mcpNodeInitRules = function () {
+        const node = RED.nodes.node(RED.editor.activeNode.id);
+        rules = (node.rules && Array.isArray(node.rules)) ? JSON.parse(JSON.stringify(node.rules)) : [];
+        if (rules.length === 0) rules.push(createBlankRule());
+        renderRules();
+        attachHandlers();
+        initSortable();
+    };
+
+    function attachHandlers() {
+        $("#mcp-add-rule").off().on("click", function (e) {
+            e.preventDefault();
+            rules.push(createBlankRule());
+            renderRules();
+        });
+    }
+
+    function renderRules() {
+        const $list = $("#mcp-rules-list").empty();
+        rules.forEach((rule, idx) => {
+            if (!rule.label) rule.label = String(idx + 1);
+            const $li = $(
+                `<li class="mcp-rule-item" data-index="${idx}">
+                    <div class="mcp-rule-row1">
+                        <span class="mcp-drag-handle"><i class="fa fa-bars"></i></span>
+                        <select class="mcp-source"></select>
+                        <input type="text" class="mcp-property" placeholder="property"/>
+                        <select class="mcp-operator"></select>
+                        <a href="#" class="mcp-delete"><i class="fa fa-times"></i></a>
+                    </div>
+                    <div class="mcp-rule-row2">
+                        <input type="text" class="mcp-value" placeholder="value"/>
+                        <input type="text" class="mcp-label" placeholder="label"/>
+                    </div>
+                </li>`);
+
+            // Populate selects
+            SOURCE_OPTIONS.forEach(opt => $li.find('.mcp-source').append(`<option value="${opt.v}">${opt.l}</option>`));
+            OPERATOR_OPTIONS.forEach(opt => $li.find('.mcp-operator').append(`<option value="${opt.v}">${opt.l}</option>`));
+
+            // Set values
+            $li.find('.mcp-source').val(rule.source);
+            $li.find('.mcp-property').val(rule.property);
+            $li.find('.mcp-operator').val(rule.operator);
+            $li.find('.mcp-value').val(rule.value);
+            $li.find('.mcp-label').val(rule.label);
+
+            // Change handlers
+            $li.find('select, input').on('change keyup', function () {
+                const rIdx = $li.data('index');
+                const r = rules[rIdx];
+                r.source = $li.find('.mcp-source').val();
+                r.property = $li.find('.mcp-property').val();
+                r.operator = $li.find('.mcp-operator').val();
+                r.value = $li.find('.mcp-value').val();
+                r.label = $li.find('.mcp-label').val();
+                syncOutputLabels();
+            });
+
+            // Delete
+            $li.find('.mcp-delete').on('click', function (e) {
+                e.preventDefault();
+                const rIdx = $li.data('index');
+                rules.splice(rIdx, 1);
+                if (rules.length === 0) rules.push(createBlankRule());
+                renderRules();
+            });
+
+            $list.append($li);
+        });
+        syncOutputLabels();
+    }
+
+    function initSortable() {
+        $("#mcp-rules-list").sortable({
+            handle: ".mcp-drag-handle",
+            placeholder: "red-ui-sortable-placeholder",
+            update: function () {
+                const newOrder = [];
+                $("#mcp-rules-list li").each(function () {
+                    const oldIdx = $(this).data('index');
+                    newOrder.push(rules[oldIdx]);
+                });
+                rules = newOrder;
+                renderRules();
+            }
+        });
+    }
+
+    function syncOutputLabels() {
+        const node = RED.nodes.node(RED.editor.activeNode.id);
+        node.outputLabels = node.outputLabels || [];
+        while (node.outputLabels.length < rules.length) {
+            node.outputLabels.push("Output " + (node.outputLabels.length + 1));
+        }
+        if (node.outputLabels.length > rules.length) {
+            node.outputLabels = node.outputLabels.slice(0, rules.length);
+        }
+    }
+
+    // Called by editor.js when node dialog is being saved
+    window.mcpNodeGetRules = function () {
+        return JSON.parse(JSON.stringify(rules));
+    };
+})();
+</script>

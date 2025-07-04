@@ -1,4 +1,23 @@
 <div class="mcp-rules-container">
+    <table class="mcp-rules-table" id="mcp-rules-table" style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th style="width:24px;"></th>
+                <th>Source</th>
+                <th>Property/Result</th>
+                <th>Operator</th>
+                <th>Compare&nbsp;To</th>
+                <th>Label</th>
+                <th style="width:24px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <div style="margin-top:6px;">
+        <a href="#" class="editor-button editor-button-small" id="mcp-add-rule"><i class="fa fa-plus"></i> Add Rule</a>
+    </div>
+</div>
     <div class="form-row">
         <label><i class="fa fa-list"></i> Routing Rules</label>
         <div class="mcp-rules-list" id="mcp-rules-list">
@@ -66,13 +85,6 @@
             Function should set <code>result = true</code> to match this rule.
             The <code>msg</code> object is available in the function scope.
         </div>
-    </div>
-    
-    <div class="form-row">
-        <label for="rule-output">Output</label>
-        <select id="rule-output">
-            <!-- Output options will be populated dynamically -->
-        </select>
     </div>
     
     <div class="form-row">
@@ -234,7 +246,7 @@
             $("#rule-property").val("payload");
             $("#rule-operator").val("eq");
             $("#rule-value").val("");
-            $("#rule-output").val(0);
+            
             $("#rule-priority").val(0);
             $("#rule-disabled").prop("checked", false);
             
@@ -245,9 +257,6 @@
             if (javascriptEditor) {
                 javascriptEditor.setValue("// Return true to match this rule\n// msg object is available\nresult = msg.payload > 0;");
             }
-            
-            // Update output options
-            updateOutputOptions();
             
             // Show rule editor
             updateRuleTypeFields("simple");
@@ -267,7 +276,6 @@
             $("#rule-property").val(rule.property || "payload");
             $("#rule-operator").val(rule.operator || "eq");
             $("#rule-value").val(rule.value || "");
-            $("#rule-output").val(rule.output || 0);
             $("#rule-priority").val(rule.priority || 0);
             $("#rule-disabled").prop("checked", rule.disabled || false);
             
@@ -278,9 +286,6 @@
             if (javascriptEditor && rule.type === "javascript") {
                 javascriptEditor.setValue(rule.function || "// Return true to match this rule\n// msg object is available\nresult = msg.payload > 0;");
             }
-            
-            // Update output options
-            updateOutputOptions();
             
             // Show rule editor
             updateRuleTypeFields(rule.type || "simple");
@@ -293,6 +298,11 @@
             
             if (confirm("Are you sure you want to delete this rule?")) {
                 rules.splice(index, 1);
+                // Trim node.outputLabels if there are now fewer rules than labels
+                const node = RED.nodes.node(RED.editor.activeNode.id);
+                if (node && node.outputLabels && node.outputLabels.length > rules.length) {
+                    node.outputLabels = node.outputLabels.slice(0, rules.length);
+                }
                 updateRulesList();
             }
         }
@@ -302,7 +312,6 @@
             const rule = {
                 name: $("#rule-name").val(),
                 type: $("#rule-type").val(),
-                output: parseInt($("#rule-output").val(), 10),
                 priority: parseInt($("#rule-priority").val(), 10),
                 disabled: $("#rule-disabled").is(":checked")
             };
@@ -318,13 +327,26 @@
                 rule.function = javascriptEditor.getValue();
             }
             
-            // Add or update rule
+            // Retrieve node and ensure output labels length matches rules length after we finish
+
+            let newIndex;
             if (editingRuleIndex === -1) {
+                newIndex = rules.length;
+                rule.output = newIndex;
                 rules.push(rule);
             } else {
+                newIndex = editingRuleIndex;
+                rule.output = newIndex;
                 rules[editingRuleIndex] = rule;
             }
-            
+
+            // Sync output labels size with rule count
+            const node = RED.nodes.node(RED.editor.activeNode.id);
+            node.outputLabels = node.outputLabels || [];
+            while (node.outputLabels.length < rules.length) {
+                node.outputLabels.push(`Output ${node.outputLabels.length + 1}`);
+            }
+
             // Update UI
             updateRulesList();
             hideRuleEditor();
@@ -353,7 +375,7 @@
             $("#mcp-add-rule").show();
         }
         
-        // Update output options based on node configuration
+        // (Unused)
         function updateOutputOptions() {
             const $select = $("#rule-output");
             $select.empty();
@@ -364,6 +386,8 @@
             outputLabels.forEach((label, index) => {
                 $select.append(`<option value="${index}">${label}</option>`);
             });
+            // Option to create new output
+            $select.append(`<option value="${outputLabels.length}">[Add New Output]</option>`);
         }
         
         // Get the current rules

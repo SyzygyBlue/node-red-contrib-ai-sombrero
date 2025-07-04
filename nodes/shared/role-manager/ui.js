@@ -303,13 +303,18 @@ class RoleManagerUI {
     this.overlay.style.display = 'block';
     this.dialog.style.display = 'block';
     try {
-      const roles = await RED.nodes.RoleManager.getAllRoles(this.dbConfigNodeId);
+      const resp = await fetch(`/ai-sombrero/roles?dbConfigId=${encodeURIComponent(this.dbConfigNodeId)}`);
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || resp.statusText);
+      }
+      const roles = await resp.json();
       this.displayRoles(roles);
     } catch (error) {
       RED.notify(`Error loading roles: ${error.message}`, 'error');
-      this.displayRoles([]); // Display empty list on error
+      this.displayRoles([]);
     }
-    this.handleSearch(''); // Show all roles on open
+    // No need to call handleSearch here; roles already displayed
   }
 
   close() {

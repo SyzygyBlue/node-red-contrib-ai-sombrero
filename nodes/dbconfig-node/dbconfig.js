@@ -65,6 +65,28 @@ module.exports = function(RED) {
                             filename: node.filename,
                             driver: sqlite3.Database
                         });
+                        // Provide a pg-like query wrapper for compatibility with RoleManager and other utils
+                        if (typeof node.connection.query !== 'function') {
+                            node.connection.query = async (sql, params = []) => {
+                                const isSelect = /^\s*select/i.test(sql);
+                                const hasReturning = /\bRETURNING\b/i.test(sql);
+                                if (isSelect || hasReturning) {
+                                    // SQLite supports `RETURNING` from version 3.35.0, use .all to capture rows
+                                    const rows = await node.connection.all(sql, params);
+                                    return {
+                                        rows,
+                                        rowCount: rows.length,
+                                    };
+                                }
+                                // For INSERT/UPDATE/DELETE without RETURNING
+                                const result = await node.connection.run(sql, params);
+                                return {
+                                    rows: [],
+                                    rowCount: result?.changes ?? 0,
+                                    lastID: result?.lastID
+                                };
+                            };
+                        }
                         node.status({ fill: "green", shape: "dot", text: "connected" });
                         node.log(`Connected to SQLite database: ${node.filename}`);
                         break;

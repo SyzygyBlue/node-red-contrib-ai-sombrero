@@ -5,100 +5,75 @@
 
 (function() {
     // Tab definitions
-    const tabs = [
-        { id: "rules-tab", label: "Rules", template: "rules-template.html" },
-        { id: "outputs-tab", label: "Outputs", template: "outputs-template.html" },
-        { id: "ai-tab", label: "AI Routing", template: "ai-template.html" },
-        { id: "debug-tab", label: "Debug", template: "debug-template.html" }
-    ];
     
-    // Initialize the editor
+    
+    // Helper to load HTML templates and ensure inline <script> blocks are executed
+    function loadTemplateInto(path, $target, initCallback) {
+        $.get(path, function(html) {
+            // Parse HTML and keep <script> tags
+            const parsed = $.parseHTML(html, document, true);
+            // Separate script and non-script elements
+            const $scripts = $(parsed).filter('script');
+            const $content = $(parsed).filter(function() {
+                return this.nodeName.toLowerCase() !== 'script';
+            });
+            // Inject non-script content
+            $target.empty().append($content);
+            // Execute scripts manually so they are registered
+            $scripts.each(function() {
+                const src = $(this).attr('src');
+                if (src) {
+                    // External script – load asynchronously then continue
+                    $.getScript(src, function() {
+                        if (typeof initCallback === 'function') initCallback();
+                    });
+                } else {
+                    $.globalEval(this.text || this.textContent || this.innerText || '');
+                }
+            });
+            // If there were no external scripts, invoke callback now
+            if (!$scripts.filter('[src]').length && typeof initCallback === 'function') {
+                initCallback();
+            }
+        });
+    }
+
+    // Initialize the editor (no tabs)
     function initEditor() {
-        // Create tabs
-        const $tabs = $("#mcp-node-tabs");
-        const $content = $("#mcp-node-tab-content");
-        
-        // Clear any existing content
-        $tabs.empty();
-        $content.empty();
-        
-        // Create tab headers
-        tabs.forEach((tab, index) => {
-            const $li = $("<li/>", { class: index === 0 ? "active" : "" });
-            const $a = $("<a/>", { 
-                href: "#" + tab.id, 
-                "data-toggle": "tab",
-                text: tab.label
-            });
-            
-            $li.append($a);
-            $tabs.append($li);
-            
-            // Create tab content container
-            const $tabContent = $("<div/>", { 
-                id: tab.id, 
-                class: "tab-pane" + (index === 0 ? " active" : "")
-            });
-            
-            $content.append($tabContent);
-            
-            // Load tab template
-            loadTemplate(tab.template, tab.id);
+        const $rulesContainer = $('#mcp-rules-container');
+        const $advContainer = $('#mcp-advanced-container');
+
+        // Load Rules editor and execute its script
+        loadTemplateInto('/mcp-node/ui/templates/rules-v2-template.html', $rulesContainer, function() {
+            if (typeof window.mcpNodeInitRules === 'function') window.mcpNodeInitRules();
         });
-        
-        // Tab click handler
-        $tabs.find("a").click(function(e) {
+
+        // Load AI template (hidden by default)
+        loadTemplateInto('/mcp-node/ui/templates/ai-template.html', $('#mcp-ai-container'), function() {
+            if (typeof window.mcpNodeInitAI === 'function') window.mcpNodeInitAI();
+        });
+
+        // Load Advanced template
+        loadTemplateInto('/mcp-node/ui/templates/advanced-template.html', $advContainer, function() {
+            if (typeof window.mcpNodeInitAdvanced === 'function') window.mcpNodeInitAdvanced();
+        });
+
+        // Toggle AI panel via magnifier
+        $('#mcp-ai-edit').click(function(e) {
             e.preventDefault();
-            const tabId = $(this).attr("href").substring(1);
-            
-            // Activate selected tab
-            $tabs.find("li").removeClass("active");
-            $(this).parent().addClass("active");
-            
-            // Show selected tab content
-            $content.children().removeClass("active");
-            $("#" + tabId).addClass("active");
+            $('#mcp-ai-container').toggle();
+            if ($('#mcp-ai-container').is(':visible') && typeof window.mcpNodeResizeAI==='function') window.mcpNodeResizeAI();
         });
-        
-        // Show/hide LLM config based on routing mode
-        $("#node-input-routingMode").change(function() {
-            const mode = $(this).val();
-            if (mode === "ai" || mode === "hybrid") {
-                $("#llm-config-row").show();
-            } else {
-                $("#llm-config-row").hide();
-            }
-        }).trigger("change");
-        
-        // Initialize components when templates are loaded
-        setTimeout(initComponents, 100);
-    }
-    
-    // Load a template into a container
-    function loadTemplate(templateName, containerId) {
-        // Use the path format that matches the server-side endpoint
-        $.get("/mcp-node/ui/templates/" + templateName, function(data) {
-            $("#" + containerId).html(data);
-            
-            // Initialize components specific to this template
-            if (containerId === "rules-tab") {
-                initRulesEditor();
-            } else if (containerId === "outputs-tab") {
-                initOutputsEditor();
-            } else if (containerId === "ai-tab") {
-                initAIEditor();
-            } else if (containerId === "debug-tab") {
-                initDebugEditor();
-            }
+
+        // Toggle advanced panel
+        $('#advanced-toggle').click(function(e) {
+            e.preventDefault();
+            $advContainer.toggle();
         });
     }
     
-    // Initialize all components
-    function initComponents() {
-        // This will be called after templates are loaded
-        // Each specific component will be initialized by its own function
-    }
-    
+        
+
     // Initialize rules editor
     function initRulesEditor() {
         // Will be implemented when rules-template.html is loaded
@@ -107,55 +82,12 @@
         }
     }
     
-    // Initialize outputs editor
-    function initOutputsEditor() {
-        // Will be implemented when outputs-template.html is loaded
-        if (typeof window.mcpNodeInitOutputs === 'function') {
-            window.mcpNodeInitOutputs();
-        }
-    }
-    
-    // Initialize AI editor
-    function initAIEditor() {
-        // Will be implemented when ai-template.html is loaded
-        if (typeof window.mcpNodeInitAI === 'function') {
-            window.mcpNodeInitAI();
-        }
-    }
-    
-    // Initialize debug editor
-    function initDebugEditor() {
-        // Will be implemented when debug-template.html is loaded
-        if (typeof window.mcpNodeInitDebug === 'function') {
-            window.mcpNodeInitDebug();
-        }
-    }
-    
-    // Resize handler
-    window.mcpNodeResize = function() {
-        const tabs = $("#mcp-node-tabs");
-        const content = $("#mcp-node-tab-content");
-        
-        // Adjust height based on available space
-        const newHeight = $(".red-ui-editor-dialog").height() - tabs.offset().top - 20;
-        content.height(Math.max(300, newHeight));
-        
-        // Resize specific components
-        if (typeof window.mcpNodeResizeRules === 'function') {
-            window.mcpNodeResizeRules();
-        }
-        
-        if (typeof window.mcpNodeResizeAI === 'function') {
-            window.mcpNodeResizeAI();
-        }
-    };
-    
+    // Initialize advanced editor
     // Save data from all tabs
     window.mcpNodeSaveData = function() {
         const data = {
             rules: [],
-            outputLabels: [],
-            aiPromptTemplate: ""
+            outputLabels: []
         };
         
         // Collect data from rules tab
@@ -163,16 +95,14 @@
             data.rules = window.mcpNodeGetRules();
         }
         
-        // Collect data from outputs tab
-        if (typeof window.mcpNodeGetOutputs === 'function') {
-            data.outputLabels = window.mcpNodeGetOutputs();
-        }
+        // output labels are already synced by rules editor
+        const node = RED.nodes.node(RED.editor.activeNode.id);
+        data.outputLabels = node.outputLabels || [];
         
-        // Collect data from AI tab
-        if (typeof window.mcpNodeGetAIPrompt === 'function') {
+                // AI prompt
+        if (typeof window.mcpNodeGetAIPrompt==='function') {
             data.aiPromptTemplate = window.mcpNodeGetAIPrompt();
         }
-        
         return data;
     };
     

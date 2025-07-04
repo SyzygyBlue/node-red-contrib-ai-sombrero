@@ -16,6 +16,22 @@ module.exports = function(RED) {
   }
 
   const RoleManager = {
+    // Helper to run a query and add missing 'permissions' column if needed (SQLite legacy tables)
+    _executeWithPermissionsCheck: async function(client, query, values = []) {
+      try {
+        return await client.query(query, values);
+      } catch (err) {
+        if (/no such column: permissions/i.test(err.message)) {
+          try {
+            await client.query('ALTER TABLE roles ADD COLUMN permissions TEXT');
+            return await client.query(query, values);
+          } catch (inner) {
+            throw inner;
+          }
+        }
+        throw err;
+      }
+    },
     /**
      * Retrieves all roles from the database.
      * @param {string} dbConfigNodeId - The ID of the dbconfig-node to use.
@@ -26,7 +42,7 @@ module.exports = function(RED) {
       try {
         client = await getDbClient(dbConfigNodeId);
         // Assuming PostgreSQL for now. Adjust query for other DB types if necessary.
-        const result = await client.query('SELECT id, name, description, permissions FROM roles');
+        const result = await RoleManager._executeWithPermissionsCheck(client, 'SELECT id, name, description, permissions FROM roles');
         return result.rows;
       } catch (error) {
         RED.log.error(`[RoleManager] Failed to get all roles: ${error.message}`);
@@ -53,8 +69,17 @@ module.exports = function(RED) {
         }
         const query = 'INSERT INTO roles (name, description, permissions) VALUES ($1, $2, $3) RETURNING id, name, description, permissions';
         const values = [name, description || null, permissions ? JSON.stringify(permissions) : null];
-        const result = await client.query(query, values);
-        return result.rows[0];
+        const result = await RoleManager._executeWithPermissionsCheck(client, query, values);
+        if (result.rows && result.rows.length > 0) {
+          return result.rows[0];
+        }
+        // SQLite may not return rows even with RETURNING; fall back to lastID if provided
+        if (result.lastID) {
+          return await RoleManager.getRole(dbConfigNodeId, result.lastID);
+        }
+        // As a final fallback, select by name (should be unique)
+        const byName = await RoleManager._executeWithPermissionsCheck(client, 'SELECT id, name, description, permissions FROM roles WHERE name = $1 ORDER BY id DESC LIMIT 1', [name]);
+        return byName.rows[0] || null;
       } catch (error) {
         RED.log.error(`[RoleManager] Failed to create role: ${error.message}`);
         throw error;
@@ -72,7 +97,7 @@ module.exports = function(RED) {
       try {
         client = await getDbClient(dbConfigNodeId);
         const query = 'SELECT id, name, description, permissions FROM roles WHERE id = $1';
-        const result = await client.query(query, [roleId]);
+        const result = await RoleManager._executeWithPermissionsCheck(client, query, [roleId]);
         return result.rows[0] || null;
       } catch (error) {
         RED.log.error(`[RoleManager] Failed to get role by ID (${roleId}): ${error.message}`);
@@ -114,9 +139,29 @@ module.exports = function(RED) {
           return this.getRole(dbConfigNodeId, roleId); // No updates provided
         }
 
+        // For SQLite, the Postgres-style placeholders ($1, $2, ...) are not supported.
+        if (typeof client.run === 'function' && typeof client.all === 'function') {
+          // Build statement with positional `?` placeholders instead
+          const setParts = [];
+          const setValues = [];
+          if (name !== undefined) { setParts.push('name = ?'); setValues.push(name); }
+          if (description !== undefined) { setParts.push('description = ?'); setValues.push(description); }
+          if (permissions !== undefined) { setParts.push('permissions = ?'); setValues.push(permissions ? JSON.stringify(permissions) : null); }
+          if (setParts.length > 0) {
+            await RoleManager._executeWithPermissionsCheck(client, `UPDATE roles SET ${setParts.join(', ')} WHERE id = ?`, [...setValues, roleId]);
+          }
+          // Fetch and return the updated record
+          return await RoleManager.getRole(dbConfigNodeId, roleId);
+        }
+
+        // Default: databases that support PostgreSQL-style placeholders & RETURNING
         const query = `UPDATE roles SET ${updates.join(', ')} WHERE id = $1 RETURNING id, name, description, permissions`;
-        const result = await client.query(query, values);
-        return result.rows[0] || null;
+        const result = await RoleManager._executeWithPermissionsCheck(client, query, values);
+        if (result.rows && result.rows.length > 0) {
+          return result.rows[0];
+        }
+        // Fallback – if no rows returned, fetch explicitly
+        return await RoleManager.getRole(dbConfigNodeId, roleId);
       } catch (error) {
         RED.log.error(`[RoleManager] Failed to update role (${roleId}): ${error.message}`);
         throw error;
@@ -134,7 +179,7 @@ module.exports = function(RED) {
       try {
         client = await getDbClient(dbConfigNodeId);
         const query = 'DELETE FROM roles WHERE id = $1 RETURNING id';
-        const result = await client.query(query, [roleId]);
+        const result = await RoleManager._executeWithPermissionsCheck(client, query, [roleId]);
         return result.rowCount > 0;
       } catch (error) {
         RED.log.error(`[RoleManager] Failed to delete role (${roleId}): ${error.message}`);
@@ -146,6 +191,17 @@ module.exports = function(RED) {
   // Expose the RoleManager functions globally or via RED.nodes for other nodes to use
   // This makes it accessible from other parts of the Node-RED runtime.
   RED.nodes.RoleManager = RoleManager;
+  // Register a hidden config node so Node-RED loads this module
+  function RoleManagerConfigNode(config) {
+    RED.nodes.createNode(this, config);
+  }
+  RED.nodes.registerType('role-manager', RoleManagerConfigNode, {
+    category: 'config',
+    defaults: {},
+    // Hide from palette
+    paletteLabel: 'role-manager',
+    label: function() { return 'role-manager'; }
+  });
 
   // CRUD HTTP Admin endpoints for roles
   // Get all roles

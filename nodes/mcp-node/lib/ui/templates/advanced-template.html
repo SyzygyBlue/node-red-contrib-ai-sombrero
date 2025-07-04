@@ -1,0 +1,46 @@
+<div class="mcp-advanced-container">
+    <div class="form-row">
+        <label for="advanced-debugMode"><i class="fa fa-bug"></i> Enable Debug Mode</label>
+        <input type="checkbox" id="advanced-debugMode" style="vertical-align:middle;">
+    </div>
+
+    <div class="form-row">
+        <label for="advanced-temperature"><i class="fa fa-thermometer-half"></i> Temperature</label>
+        <input type="number" id="advanced-temperature" min="0" max="1" step="0.01" style="width:70%">
+    </div>
+
+    <div class="form-row">
+        <label><i class="fa fa-history"></i> Decision History</label>
+        <div id="advanced-decision-history" class="mcp-history-container">
+            <div class="mcp-history-empty">No decision history available</div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+(function() {
+    window.mcpNodeInitAdvanced = function() {
+        const node = RED.nodes.node(RED.editor.activeNode.id);
+        $("#advanced-debugMode").prop("checked", node.debugMode || false);
+        $("#advanced-temperature").val(typeof node.temperature === 'number' ? node.temperature : 0.7);
+    };
+})();
+</script>
+
+<style>
+    .mcp-advanced-container {
+        width: 100%;
+    }
+    .mcp-history-container {
+        border: 1px solid #ccc;
+        padding: 6px;
+        max-height: 150px;
+        overflow-y: auto;
+        background: #fafafa;
+    }
+    .mcp-history-empty {
+        color: #888;
+        text-align: center;
+        padding: 10px;
+    }
+</style>
