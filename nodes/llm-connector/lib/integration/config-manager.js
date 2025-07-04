@@ -124,6 +124,10 @@ function validateGenericConfig(config) {
  * @returns {Object} Normalized configuration
  */
 function normalizeLLMConfig(config) {
+  // Promote credentialed apiKey to top-level for validation convenience
+  if (!config.apiKey && config.credentials && typeof config.credentials === 'object' && config.credentials.apiKey) {
+    config.apiKey = config.credentials.apiKey;
+  }
   if (!config || typeof config !== 'object') {
     throw new LLMError(
       'Configuration must be an object',

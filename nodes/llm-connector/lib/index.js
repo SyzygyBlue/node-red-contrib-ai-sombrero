@@ -100,7 +100,7 @@ async function processMessage(msg, node) {
       // 3. Call the LLM
       const llmClient = createLLMClient({
         ...provider,
-        callLLM: provider.callLLM
+        callLLM: provider.callLLM.bind(provider)
       });
       
       const llmResponse = await llmClient.generate(prompt, {

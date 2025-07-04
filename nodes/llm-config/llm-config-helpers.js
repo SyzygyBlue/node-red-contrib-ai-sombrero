@@ -22,7 +22,7 @@ function validateConfig(config, credentials) {
   }
 
   // Common validation (Ollama does not require an API key)
-  if (config.provider !== 'ollama' && (!credentials || !credentials.apiKey)) {
+  if (config.provider !== 'ollama' && config.provider !== 'magistral' && (!credentials || !credentials.apiKey)) {
     throw new Error('API Key is required');
   }
 
@@ -53,6 +53,12 @@ function validateConfig(config, credentials) {
       // Deepseek validation is handled by common validation
       break;
     case 'xai':
+      // xAI validation is handled by common validation
+      break;
+    case 'magistral':
+      // Magistral validation is handled by common validation
+      break;
+    case 'ollama':
       // xAI validation is handled by common validation
       break;
     case 'ollama':

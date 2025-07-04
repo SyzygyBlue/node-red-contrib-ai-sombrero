@@ -79,10 +79,16 @@
                         break;
                     case "ollama":
                         modelSelect.append(new Option("deepseek-r1", "deepseek-r1"));
-                        modelSelect.append(new Option("mistral:7b-instruct", "mistral:7b-instruct"));
-                        modelSelect.append(new Option("llama3:8b", "llama3:8b"));
+                        modelSelect.append(new Option("mistral:7b", "mistral:7b"));
+                        modelSelect.append(new Option("llama3", "llama3"));
                         modelSelect.append(new Option("codellama:7b-instruct", "codellama:7b-instruct"));
                         modelSelect.append(new Option("devstral:28b", "devstral"));
+                        modelSelect.append(new Option("mixtral", "mixtral"));
+                        modelSelect.append(new Option("magistral", "magistral"));
+                        break;
+                    case "magistral":
+                        modelSelect.append(new Option("magistral-7b", "magistral-7b"));
+                        modelSelect.append(new Option("magistral-13b", "magistral-13b"));
                         break;
                     case "xai":
                         modelSelect.append(new Option("grok-1", "grok-1"));
@@ -121,6 +127,7 @@
             <option value="ollama">Ollama (local)</option>
             <option value="deepseek">Deepseek</option>
             <option value="xai">xAI</option>
+            <option value="magistral">Magistral</option>
         </select>
     </div>
     

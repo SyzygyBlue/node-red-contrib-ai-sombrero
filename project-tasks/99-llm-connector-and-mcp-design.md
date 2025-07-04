@@ -38,6 +38,76 @@ The goal is to deliver:
 
 ---
 
+## 2.1 Standard Message Envelope & Processing Contract
+
+### Envelope Structure
+```jsonc
+{
+  "workId": "<uuid>",           // OPTIONAL – created by first connector if absent
+  "roleId": "<uuid>",           // OPTIONAL – defaults to node’s configured role
+  "payload": "<string|object>", // REQUIRED – task or data to process
+  "units": [ /* envelopes */ ],   // OPTIONAL – added after a split operation
+  "meta": {
+    "parentSeq": 0,              // index of parent unit, if any
+    "attempt": 1,                // retry counter
+    "traceId": "<uuid>"
+  },
+  "llmOptions": { "temperature": 0.7 }, // OPTIONAL per-message overrides
+  "_llm": { "provider": "ollama", "model": "llama3:8b", "tokens": 200 }
+}
+```
+
+### Generation Rules
+1. **workId** – if `msg.workId` is missing the node creates `uuid.v4()` before DB insert.
+2. **roleId** – if missing the node injects its configured `roleId` and errors if none configured.
+3. IDs are persisted in both `jobs` and `work_units` tables.
+
+### Connector Behaviour
+* Builds prompt using role description + `payload`.
+* Calls LLM; expects JSON array → validates/normalises.
+* On success: sets `msg.units = [ envelopes… ]`, stores rows in `work_units`, sets `jobs.status = 'done'`.
+* On failure: stores raw response, sets `jobs.status = 'error'`, emits on output 2 with `msg.error`.
+
+### MCP Behaviour
+* Accepts identical envelope.
+* If `units` present → iterates & routes each.
+* If none → classifies/decides based on `payload` and forwards.
+
+### Persistence Schema
+```sql
+CREATE TABLE jobs (
+  job_id       TEXT PRIMARY KEY,
+  role_id      TEXT,
+  payload      TEXT,
+  status       TEXT DEFAULT 'pending',
+  attempts     INTEGER DEFAULT 0,
+  created_at   INTEGER,
+  last_error   TEXT,
+  raw_response TEXT
+);
+
+CREATE TABLE work_units (
+  job_id   TEXT,
+  role_id  TEXT,
+  seq      INTEGER,
+  unit_json TEXT,
+  status   TEXT DEFAULT 'ready',
+  attempts INTEGER DEFAULT 0,
+  processed_at INTEGER,
+  last_error TEXT,
+  PRIMARY KEY (job_id, role_id, seq)
+);
+```
+
+### Retry Strategy
+A separate Retry flow queries:
+```sql
+SELECT * FROM jobs WHERE status='error' AND attempts < <maxAttempts>;
+```
+Re-injects the envelope with `meta.attempt++`. The connector caps retries and moves jobs to `dead` status when exceeded.
+
+---
+
 ### MVP vs Future Scope
 The first milestone focuses on a lean, test-able flow:
 * Single Handlebars template `role.hbs` powers all role enhancements.

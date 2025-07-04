@@ -6,7 +6,8 @@
  */
 
 module.exports = function (RED) {
-  const { v7: uuidv7 } = require('uuid');
+  // Prefer sortable UUID v7 where available; fallback to v4 in older uuid versions
+  const { v7: uuidv7, v4: uuidv4 } = require('uuid');
   const createWorkDao = require('../shared/work-dao');
 
   // Instantiate DAO once per RED runtime
@@ -97,8 +98,8 @@ module.exports = function (RED) {
    * Ensure workId & roleId fields present on messages.
    */
   function ensureIds(originalMsg, processedMsg, node) {
-    const workId = originalMsg.workId || processedMsg.workId || uuidv7();
-    const roleId = originalMsg.roleId || processedMsg.roleId || (node.roleIdentity || uuidv7());
+        const workId = originalMsg.workId || processedMsg.workId || (uuidv7 ? uuidv7() : uuidv4());
+        const roleId = originalMsg.roleId || processedMsg.roleId || (node.roleIdentity || (uuidv7 ? uuidv7() : uuidv4()));
 
     originalMsg.workId = workId;
     processedMsg.workId = workId;

@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [0.2.8] - 2025-07-02
+## [0.3.0] - 2025-07-04
 ### Added
+- **Robust JSON extraction** in LLM Connector output processor using balanced-bracket scanning to reliably parse objects/arrays embedded in LLM responses.
+- Recursive normalization of nested `choices/message.content`, `text`, and other wrapper fields.
+- Diagnostic return when JSON is invalid (`format: invalid_json`) to aid downstream debugging.
+- Automatic promotion of credentialed `apiKey` to top-level during config validation for OpenAI and other providers.
+- New Ollama model suggestion `mixtral` in LLM Config UI.
 - Local **Ollama (local)** provider support in the LLM Config node
   - New `callOllama` helper and connectivity test
   - Provider option & model suggestions in the editor UI
