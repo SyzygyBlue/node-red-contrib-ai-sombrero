@@ -20,9 +20,26 @@
             dbConfig: { value: "", type: "dbconfig-node", required: false }
         },
         inputs: 1,
-        outputs: 1,
+        outputs: function() {
+            return this.outputLabels && this.outputLabels.length ? this.outputLabels.length : 1;
+        },
+        outputLabels: function(index) {
+            if (!this.outputLabels || index === undefined) return null;
+            return this.outputLabels[index] || null;
+        },
 
         oneditprepare: function() {
+            // Make current node globally accessible for template scripts
+            window.mcpNodeCurrentNode = this;
+            // Polyfill for RED.nodes.config.init for Node-RED v4+
+            if (!RED.nodes.config) {
+                RED.nodes.config = {
+                    init: function(opts) {
+                        console.debug('RED.nodes.config.init polyfill invoked', opts);
+                    }
+                };
+            }
+
             // Load external editor scripts
             $.getScript('/mcp-node/ui/editor.js');
 

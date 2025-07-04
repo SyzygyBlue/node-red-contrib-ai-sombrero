@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-07-04
+### Added
+- Dynamic output count & labels in MCP node definition ensuring ports persist across editor refresh.
+- Auto-sync of rule labels to output tool-tips in MCP rules editor.
+### Fixed
+- Editor warning "node.wires longer than node.outputs" and disappearing wires.
+- Rules without explicit `output` or `type` now default correctly in runtime routing service.
+
 ## [0.3.0] - 2025-07-04
 ### Added
 - **Robust JSON extraction** in LLM Connector output processor using balanced-bracket scanning to reliably parse objects/arrays embedded in LLM responses.
