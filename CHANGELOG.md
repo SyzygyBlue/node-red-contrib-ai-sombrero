@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.3] - 2025-07-07
+### Fixed
+- MCP node now strips all Handlebars placeholders before sending prompts to the LLM, eliminating `{{message}}` echo issues.
+- Added robust placeholder-regexes that tolerate extra whitespace and fallback to output labels when `aiLabelList` is empty.
+- Added automatic removal of any stray `{{…}}` tokens so the LLM never sees them.
+- `routing-service.js` now always passes `response_format:{type:"json_object"}` when a provider supports it.
+- Updated `ai-result-armor.js` to attempt recovery from truncated JSON and return `null` when no structure is found.
+- Fixed AI decision map construction when labels contain spaces; guides recommend underscore-separated labels.
+- Guarded rule evaluation crashes by clarifying recommended bracket-notation in docs.
+
+### Added
+- Debug log now shows trimmed prompt & response only after placeholders replaced.
+- CHANGELOG entry for 0.3.2 omitted earlier releases; summarised under 0.3.3.
+
+### Changed
+- Package version bumped to **0.3.3**.
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

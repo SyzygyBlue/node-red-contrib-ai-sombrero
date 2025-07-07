@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-ai-sombrero",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "AI Workflow Orchestration for Node-RED",
   "main": "index.js",
   "scripts": {
